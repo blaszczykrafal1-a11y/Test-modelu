@@ -465,33 +465,103 @@ def add_section_heading(doc, text):
     pPr.append(pBdr)
 
 
-def _add_os_subheading(doc, label, border_color_hex):
-    """Pomocniczy — dodaje nagłówek OS (Na Macu: / Na Windowsie:) z lewym bordem."""
-    p = doc.add_paragraph()
-    p.paragraph_format.left_indent = Cm(1.5)
-    p.paragraph_format.space_before = Pt(4)
-    p.paragraph_format.space_after = Pt(2)
-
-    pPr = p._p.get_or_add_pPr()
-    pBdr = OxmlElement('w:pBdr')
+def _set_cell_left_border(cell, color_hex):
+    """Dodaje lewy border do komórki tabeli (bez innych bordów)."""
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    tcBorders = OxmlElement('w:tcBorders')
+    for bname in ['top', 'bottom', 'right', 'insideV', 'insideH']:
+        b = OxmlElement(f'w:{bname}')
+        b.set(qn('w:val'), 'none')
+        b.set(qn('w:sz'), '0')
+        b.set(qn('w:space'), '0')
+        b.set(qn('w:color'), 'auto')
+        tcBorders.append(b)
     left = OxmlElement('w:left')
     left.set(qn('w:val'), 'single')
     left.set(qn('w:sz'), '8')
     left.set(qn('w:space'), '6')
-    left.set(qn('w:color'), border_color_hex)
-    pBdr.append(left)
-    pPr.append(pBdr)
+    left.set(qn('w:color'), color_hex)
+    tcBorders.append(left)
+    tcPr.append(tcBorders)
 
-    r = p.add_run(label)
-    set_font(r, bold=True, size=10)
-    return p
+
+def _insert_image_in_cell(cell, image_path, caption, width_in=2.8):
+    """Wstawia obrazek do komórki tabeli."""
+    if image_path and os.path.exists(image_path):
+        img_para = cell.add_paragraph()
+        img_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        img_para.paragraph_format.space_before = Pt(4)
+        img_para.paragraph_format.space_after = Pt(2)
+        try:
+            run = img_para.add_run()
+            run.add_picture(image_path, width=Inches(width_in))
+        except Exception as e:
+            print(f"  Nie udało się wstawić obrazka: {e}")
+    if caption:
+        cap = cell.add_paragraph(f'  {caption}')
+        cap.paragraph_format.space_before = Pt(2)
+        cap.paragraph_format.space_after = Pt(4)
+        for r in cap.runs:
+            set_font(r, size=8, italic=True, color=(100, 100, 100))
+
+
+def _add_screenshot_ph_to_cell(cell, description):
+    """Dodaje szary placeholder na screenshot do komórki tabeli."""
+    p = cell.add_paragraph()
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(6)
+    pPr = p._p.get_or_add_pPr()
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:val'), 'clear')
+    shd.set(qn('w:color'), 'auto')
+    shd.set(qn('w:fill'), 'F2F2F2')
+    pPr.append(shd)
+    pBdr = OxmlElement('w:pBdr')
+    for side in ['top', 'bottom', 'left', 'right']:
+        el = OxmlElement(f'w:{side}')
+        el.set(qn('w:val'), 'dashed')
+        el.set(qn('w:sz'), '4')
+        el.set(qn('w:space'), '4')
+        el.set(qn('w:color'), 'AAAAAA')
+        pBdr.append(el)
+    pPr.append(pBdr)
+    r = p.add_run(f'[ Miejsce na screenshot:\n{description} ]')
+    set_font(r, size=8, italic=True, color=(120, 120, 120))
+
+
+def add_screenshot_placeholder(doc, description, indent_cm=1.2):
+    """Dodaje szary placeholder na screenshot (wspólny, pełna szerokość)."""
+    p = doc.add_paragraph()
+    p.paragraph_format.left_indent = Cm(indent_cm)
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(6)
+    pPr = p._p.get_or_add_pPr()
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:val'), 'clear')
+    shd.set(qn('w:color'), 'auto')
+    shd.set(qn('w:fill'), 'F2F2F2')
+    pPr.append(shd)
+    pBdr = OxmlElement('w:pBdr')
+    for side in ['top', 'bottom', 'left', 'right']:
+        el = OxmlElement(f'w:{side}')
+        el.set(qn('w:val'), 'dashed')
+        el.set(qn('w:sz'), '4')
+        el.set(qn('w:space'), '4')
+        el.set(qn('w:color'), 'AAAAAA')
+        pBdr.append(el)
+    pPr.append(pBdr)
+    r = p.add_run(f'[ Miejsce na screenshot: {description} ]')
+    set_font(r, size=9, italic=True, color=(120, 120, 120))
 
 
 def add_step(doc, number, title, description, sub_steps=None,
              mac_steps=None, win_steps=None,
              image_path=None, image_caption=None,
              mac_image=None, win_image=None,
-             mac_image_caption=None, win_image_caption=None):
+             mac_image_caption=None, win_image_caption=None,
+             mac_screenshot_desc=None, win_screenshot_desc=None,
+             screenshot_desc=None):
     """
     Dodaje krok z checkboxem, opisem, pod-punktami i opcjonalnym obrazkiem.
 
@@ -499,11 +569,14 @@ def add_step(doc, number, title, description, sub_steps=None,
     mac_steps  — pod-punkty specyficzne dla macOS
     win_steps  — pod-punkty specyficzne dla Windows
 
-    Gdy mac_steps lub win_steps są podane, renderowane są dwa bloki
-    z nagłówkami "Na Macu:" (border #999999) i "Na Windowsie:" (border #0078D4).
+    Gdy mac_steps lub win_steps są podane, renderowane są w tabeli 2-kolumnowej
+    obok siebie: lewa kolumna = Mac, prawa = Windows.
 
-    image_path / image_caption  — wspólny obrazek (fallback)
-    mac_image / win_image       — osobne obrazki per OS
+    image_path / image_caption      — wspólny obrazek (dla sub_steps)
+    mac_image / win_image           — osobne obrazki per OS (w komórkach tabeli)
+    mac_screenshot_desc             — opis placeholdera na screenshot (Mac)
+    win_screenshot_desc             — opis placeholdera na screenshot (Windows)
+    screenshot_desc                 — opis placeholdera na screenshot (wspólny)
     """
     # ── Tytuł z checkboxem ──
     para = doc.add_paragraph()
@@ -526,12 +599,40 @@ def add_step(doc, number, title, description, sub_steps=None,
     use_os_blocks = bool(mac_steps or win_steps)
 
     if use_os_blocks:
-        # ── Blok macOS ──
+        # ── Tabela 2-kolumnowa: Mac | Windows obok siebie ──
+        table = doc.add_table(rows=1, cols=2)
+
+        # Usuń borders tabeli
+        tbl = table._tbl
+        tblPr = tbl.find(qn('w:tblPr'))
+        if tblPr is None:
+            tblPr = OxmlElement('w:tblPr')
+            tbl.insert(0, tblPr)
+        tblBorders = OxmlElement('w:tblBorders')
+        for bname in ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']:
+            b = OxmlElement(f'w:{bname}')
+            b.set(qn('w:val'), 'none')
+            b.set(qn('w:sz'), '0')
+            b.set(qn('w:space'), '0')
+            b.set(qn('w:color'), 'auto')
+            tblBorders.append(b)
+        tblPr.append(tblBorders)
+
+        mac_cell = table.cell(0, 0)
+        win_cell = table.cell(0, 1)
+
+        # ── Zawartość Mac (lewa kolumna) ──
         if mac_steps:
-            _add_os_subheading(doc, 'Na Macu:', '999999')
+            _set_cell_left_border(mac_cell, '999999')
+            p = mac_cell.paragraphs[0]
+            p.paragraph_format.space_before = Pt(4)
+            p.paragraph_format.space_after = Pt(4)
+            p.paragraph_format.left_indent = Cm(0.3)
+            r = p.add_run('Na Macu:')
+            set_font(r, bold=True, size=10, color=(80, 80, 80))
             for i, step_text in enumerate(mac_steps, start=1):
-                sp = doc.add_paragraph()
-                sp.paragraph_format.left_indent = Cm(2.2)
+                sp = mac_cell.add_paragraph()
+                sp.paragraph_format.left_indent = Cm(0.5)
                 sp.paragraph_format.first_line_indent = Cm(-0.4)
                 sp.paragraph_format.space_before = Pt(1)
                 sp.paragraph_format.space_after = Pt(2)
@@ -539,16 +640,25 @@ def add_step(doc, number, title, description, sub_steps=None,
                 set_font(num_run, bold=True, size=10, color=(80, 80, 80))
                 text_run = sp.add_run(step_text)
                 set_font(text_run, size=10)
+            actual_mac = mac_image or image_path
+            if actual_mac and os.path.exists(actual_mac):
+                _insert_image_in_cell(mac_cell, actual_mac,
+                                      mac_image_caption or image_caption)
+            elif mac_screenshot_desc:
+                _add_screenshot_ph_to_cell(mac_cell, mac_screenshot_desc)
 
-        # Obrazek macOS
-        _insert_image(doc, mac_image or image_path, mac_image_caption or image_caption)
-
-        # ── Blok Windows ──
+        # ── Zawartość Windows (prawa kolumna) ──
         if win_steps:
-            _add_os_subheading(doc, 'Na Windowsie:', '0078D4')
+            _set_cell_left_border(win_cell, '0078D4')
+            p = win_cell.paragraphs[0]
+            p.paragraph_format.space_before = Pt(4)
+            p.paragraph_format.space_after = Pt(4)
+            p.paragraph_format.left_indent = Cm(0.3)
+            r = p.add_run('Na Windowsie:')
+            set_font(r, bold=True, size=10, color=(0, 84, 166))
             for i, step_text in enumerate(win_steps, start=1):
-                sp = doc.add_paragraph()
-                sp.paragraph_format.left_indent = Cm(2.2)
+                sp = win_cell.add_paragraph()
+                sp.paragraph_format.left_indent = Cm(0.5)
                 sp.paragraph_format.first_line_indent = Cm(-0.4)
                 sp.paragraph_format.space_before = Pt(1)
                 sp.paragraph_format.space_after = Pt(2)
@@ -556,9 +666,10 @@ def add_step(doc, number, title, description, sub_steps=None,
                 set_font(num_run, bold=True, size=10, color=(0, 84, 166))
                 text_run = sp.add_run(step_text)
                 set_font(text_run, size=10)
-
-        # Obrazek Windows
-        _insert_image(doc, win_image, win_image_caption)
+            if win_image and os.path.exists(win_image):
+                _insert_image_in_cell(win_cell, win_image, win_image_caption)
+            elif win_screenshot_desc:
+                _add_screenshot_ph_to_cell(win_cell, win_screenshot_desc)
 
     else:
         # ── Wspólne pod-punkty ──
@@ -574,8 +685,11 @@ def add_step(doc, number, title, description, sub_steps=None,
                 text_run = sp.add_run(step_text)
                 set_font(text_run, size=10)
 
-        # ── Obrazek wspólny ──
-        _insert_image(doc, image_path, image_caption)
+        # ── Obrazek wspólny lub placeholder ──
+        if image_path:
+            _insert_image(doc, image_path, image_caption)
+        elif screenshot_desc:
+            add_screenshot_placeholder(doc, screenshot_desc)
 
 
 def _insert_image(doc, image_path, image_caption):
@@ -625,7 +739,7 @@ def add_welcome_section(doc):
         pBdr.append(el)
     pPr.append(pBdr)
 
-    r_label = sys_para.add_run('  Ktory masz system?   ')
+    r_label = sys_para.add_run('  Który masz system?   ')
     set_font(r_label, bold=True, size=10, color=(180, 80, 0))
     r_mac = sys_para.add_run('[Apple Mac]')
     set_font(r_mac, bold=True, size=10, color=(60, 60, 60))
@@ -646,15 +760,15 @@ def add_welcome_section(doc):
     welcome = doc.add_paragraph()
     welcome.paragraph_format.space_before = Pt(4)
     welcome.paragraph_format.space_after = Pt(8)
-    r = welcome.add_run('Hej! Nie stresuj sie — to prostsze niz myslisz.')
+    r = welcome.add_run('Hej! Nie stresuj się — to prostsze niż myślisz.')
     set_font(r, bold=True, size=13, color=(31, 73, 125))
 
     p1 = doc.add_paragraph(
-        'Nie musisz byc informatykiem ani znac sie na programowaniu. '
-        'Ten onboarding jest zaprojektowany tak, zeby kazdy — naprawde kazdy — '
-        'mogl przez niego przejsc samodzielnie. '
-        'A jesli cos bedzie niejasne, Claude (asystent AI) '
-        'bedzie przy Tobie na kazdym kroku i wytlumaczy wszystko po ludzku.'
+        'Nie musisz być informatykiem ani znać się na programowaniu. '
+        'Ten onboarding jest zaprojektowany tak, żeby każdy — naprawdę każdy — '
+        'mógł przez niego przejść samodzielnie. '
+        'A jeśli coś będzie niejasne, Claude (asystent AI) '
+        'będzie przy Tobie na każdym kroku i wytłumaczy wszystko po ludzku.'
     )
     p1.paragraph_format.space_after = Pt(10)
     for r in p1.runs:
@@ -668,21 +782,21 @@ def add_welcome_section(doc):
     set_font(r, bold=True, size=11, color=(27, 94, 32))
 
     BENEFITS = [
-        ('Asystent AI dostepny 24/7',
-         'Claude odpowiada na pytania, pisze teksty, tlumaczy dokumenty '
-         'i rozwiazuje problemy — o kazdej porze dnia i nocy.'),
-        ('Oszczedzasz czas na co dzien',
-         'Zadania, ktore zajmowaly Ci godziny, teraz trwaja minuty. '
+        ('Asystent AI dostępny 24/7',
+         'Claude odpowiada na pytania, pisze teksty, tłumaczy dokumenty '
+         'i rozwiązuje problemy — o każdej porze dnia i nocy.'),
+        ('Oszczędzasz czas na co dzień',
+         'Zadania, które zajmowały Ci godziny, teraz trwają minuty. '
          'Raporty, emaile, analizy — Claude robi to za Ciebie.'),
         ('Tworzysz projekty jak profesjonalista',
-         'Windsurf daje Ci srodowisko pracy, w ktorym Claude widzi Twoje pliki '
-         'i pomaga Ci w calym projekcie — nie tylko w jednej rozmowie.'),
-        ('AI pamieta Twoje preferencje',
-         'Po konfiguracji Claude zapamietuje jak lubisz pracowac, '
-         'w jakim jezyku, co jest dla Ciebie wazne — i stosuje to automatycznie.'),
-        ('Zawsze masz kogos do pomocy',
-         'Nie wiesz jak cos zrobic? Zapytaj Claude. '
-         'Nie ocenia, nie sie niecierpliwi, tlumaczy tyle razy ile potrzebujesz.'),
+         'Windsurf daje Ci środowisko pracy, w którym Claude widzi Twoje pliki '
+         'i pomaga Ci w całym projekcie — nie tylko w jednej rozmowie.'),
+        ('AI pamięta Twoje preferencje',
+         'Po konfiguracji Claude zapamiętuje jak lubisz pracować, '
+         'w jakim języku, co jest dla Ciebie ważne — i stosuje to automatycznie.'),
+        ('Zawsze masz kogoś do pomocy',
+         'Nie wiesz jak coś zrobić? Zapytaj Claude. '
+         'Nie ocenia, nie się niecierpliwi, tłumaczy tyle razy ile potrzebujesz.'),
     ]
 
     for title, desc in BENEFITS:
@@ -738,9 +852,9 @@ def add_welcome_section(doc):
     r1 = time_para.add_run('  Ile to zajmie?  ')
     set_font(r1, bold=True, size=10, color=(230, 81, 0))
     r2 = time_para.add_run(
-        'Okolo 20-30 minut — tyle co filizanka kawy. '
-        'Pierwsze 5 krokow zrobisz sam w ok. 10-15 minut. '
-        'Reszta zajmie sie Claude interaktywnie.'
+        'Około 20-30 minut — tyle co filiżanka kawy. '
+        'Pierwsze 5 kroków zrobisz sam w ok. 10-15 minut. '
+        'Reszta zajmie się Claude interaktywnie.'
     )
     set_font(r2, size=10, color=(80, 60, 0))
 
@@ -753,16 +867,16 @@ def add_welcome_section(doc):
 
     REQUIREMENTS = [
         ('Konto Anthropic (Claude)',
-         'Bezplatne konto na claude.ai — bez tego nie zaloguje sie Claude. '
-         'Jesli nie masz: wejdz na claude.ai, kliknij "Sign up" i utworz konto.'),
+         'Bezpłatne konto na claude.ai — bez tego nie zaloguje się Claude. '
+         'Jeśli nie masz: wejdź na claude.ai, kliknij "Sign up" i utwórz konto.'),
         ('Konto GitHub',
-         'Bezplatne konto na github.com — potrzebne do tworzenia projektow. '
-         'Jesli nie masz: wejdz na github.com, kliknij "Sign up" i utworz konto.'),
+         'Bezpłatne konto na github.com — potrzebne do tworzenia projektów. '
+         'Jeśli nie masz: wejdź na github.com, kliknij "Sign up" i utwórz konto.'),
         ('Mac lub Windows 10/11',
-         'Ta instrukcja dziala na obu systemach. '
-         'Kroki specyficzne dla systemu sa wyraznie oznaczone "Na Macu:" lub "Na Windowsie:".'),
-        ('Polaczenie z internetem',
-         'Potrzebne przez caly czas instalacji i pozniejszej pracy z Claude.'),
+         'Ta instrukcja działa na obu systemach. '
+         'Kroki specyficzne dla systemu są wyraźnie oznaczone "Na Macu:" lub "Na Windowsie:".'),
+        ('Połączenie z internetem',
+         'Potrzebne przez cały czas instalacji i późniejszej pracy z Claude.'),
     ]
 
     for title, desc in REQUIREMENTS:
@@ -794,7 +908,7 @@ def add_welcome_section(doc):
 
     # ── Zachęta ──
     closing = doc.add_paragraph(
-        'Masz wszystko? Zacznij od Kroku 1 ponizej. Powodzenia!'
+        'Masz wszystko? Zacznij od Kroku 1 poniżej. Powodzenia!'
     )
     closing.paragraph_format.space_before = Pt(10)
     closing.paragraph_format.space_after = Pt(4)
@@ -830,11 +944,11 @@ def add_prompt_block(doc, text):
 
 def add_whats_next(doc):
     """Dodaje sekcje 'Co dalej?' po zakonczeniu konfiguracji."""
-    add_section_heading(doc, 'Co dalej? — po zakonczeniu konfiguracji')
+    add_section_heading(doc, 'Co dalej? — po zakończeniu konfiguracji')
 
     intro = doc.add_paragraph(
-        'Gratulacje! Masz skonfigurowane srodowisko. '
-        'Oto co mozesz teraz robic:'
+        'Gratulacje! Masz skonfigurowane środowisko. '
+        'Oto co możesz teraz robić:'
     )
     intro.paragraph_format.space_before = Pt(4)
     intro.paragraph_format.space_after = Pt(6)
@@ -842,14 +956,14 @@ def add_whats_next(doc):
         set_font(r, size=10)
 
     NEXT_STEPS = [
-        ('Stworz pierwszy projekt',
-         'wpisz /setup-new-project do Claude i on zajmie sie reszta'),
+        ('Stwórz pierwszy projekt',
+         'wpisz /setup-new-project do Claude i on zajmie się resztą'),
         ('Pracuj z Claude',
          'po prostu wpisz pytanie lub zadanie. Claude widzi Twoje pliki i pomaga'),
-        ('Gdy za duzo rozmow',
-         'wpisz /state-start zeby Claude pamietat gdzie skonczyles, potem /clear'),
-        ('Wron po przerwie',
-         'wpisz /catchup zeby Claude przypominal sobie co robiliście'),
+        ('Gdy za dużo rozmów',
+         'wpisz /state-start żeby Claude pamiętał gdzie skończyłeś, potem /clear'),
+        ('Wróć po przerwie',
+         'wpisz /catchup żeby Claude przypomniał sobie co robiliście'),
     ]
 
     for title, desc in NEXT_STEPS:
@@ -917,50 +1031,50 @@ def build_steps(tmp_dir):
     img_npm_mac = create_terminal_mockup([
         'npm install -g @anthropic-ai/claude-code',
         '>>> added 127 packages in 45s',
-        '>>> (instalacja zakonczona, moze chwile potrwac)',
+        '>>> (instalacja zakończona, może chwilę potrwać)',
     ])
 
     img_npm_win = create_powershell_mockup([
         'npm install -g @anthropic-ai/claude-code',
         '>>> added 127 packages in 45s',
-        '>>> (instalacja zakonczona, moze chwile potrwac)',
+        '>>> (instalacja zakończona, może chwilę potrwać)',
     ])
 
     img_claude = create_terminal_mockup([
         'claude',
         '>>> Opening browser for login...',
-        '>>> (przegladarka sie otworzy — zaloguj sie)',
+        '>>> (przeglądarka się otworzy — zaloguj się)',
     ])
 
     steps = [
         {
             'title': 'Zainstaluj Windsurf',
             'description': (
-                'Windsurf to program, w ktorym bedziesz pracowac razem z asystentem AI. '
-                'Musisz go zainstalowac jak kazdy inny program.'
+                'Windsurf to program, w którym będziesz pracować razem z asystentem AI. '
+                'Musisz go zainstalować jak każdy inny program.'
             ),
             'mac_steps': [
-                'Otworz przegladarke (Safari, Chrome — cokolwiek masz).',
-                'Wejdz na strone: windsurf.com i nacisnij Enter.',
+                'Otwórz przeglądarkę (Safari, Chrome — cokolwiek masz).',
+                'Wejdź na stronę: windsurf.com i naciśnij Enter.',
                 'Kliknij przycisk pobierania dla Maca '
-                '(moze sie nazywac "Download for macOS" lub "Download for Mac").',
-                'Poczekaj — plik pobierze sie do folderu Pobrane (Downloads). '
-                'Zobaczysz go na dole okna przegladarki lub w Finderze Pobrane.',
-                'Kliknij dwukrotnie na pobrany plik (konczy sie na .dmg).',
-                'Pojawi sie okienko — przeciagnij ikone Windsurf do folderu Applications.',
-                'Poczekaj az sie skopiuje i zamknij to okienko.',
-                'Otworz Windsurf: kliknij ikone rakiety w Docku (Launchpad) '
-                'lub nacisnij Cmd+Spacja, wpisz "Windsurf" i kliknij.',
+                '(może się nazywać "Download for macOS" lub "Download for Mac").',
+                'Poczekaj — plik pobierze się do folderu Pobrane (Downloads). '
+                'Zobaczysz go na dole okna przeglądarki lub w Finderze Pobrane.',
+                'Kliknij dwukrotnie na pobrany plik (kończy się na .dmg).',
+                'Pojawi się okienko — przeciągnij ikonę Windsurf do folderu Applications.',
+                'Poczekaj aż się skopiuje i zamknij to okienko.',
+                'Otwórz Windsurf: kliknij ikonę rakiety w Docku (Launchpad) '
+                'lub naciśnij Cmd+Spacja, wpisz "Windsurf" i kliknij.',
             ],
             'win_steps': [
-                'Otworz przegladarke (Edge, Chrome — cokolwiek masz).',
-                'Wejdz na strone: windsurf.com i nacisnij Enter.',
+                'Otwórz przeglądarkę (Edge, Chrome — cokolwiek masz).',
+                'Wejdź na stronę: windsurf.com i naciśnij Enter.',
                 'Kliknij przycisk pobierania dla Windows '
-                '(moze sie nazywac "Download for Windows" lub podobnie).',
-                'Poczekaj — plik .exe lub .msi pobierze sie do folderu Pobrane.',
-                'Otworz pobrany plik (kliknij dwukrotnie).',
-                'Jesli Windows zapyta "Czy chcesz zezwolic..." — kliknij Tak.',
-                'Instalator sie otworzy — klikaj Dalej/Next przez kolejne ekrany.',
+                '(może się nazywać "Download for Windows" lub podobnie).',
+                'Poczekaj — plik .exe lub .msi pobierze się do folderu Pobrane.',
+                'Otwórz pobrany plik (kliknij dwukrotnie).',
+                'Jeśli Windows zapyta "Czy chcesz zezwolić..." — kliknij Tak.',
+                'Instalator się otworzy — klikaj Dalej/Next przez kolejne ekrany.',
                 'Po instalacji kliknij Windsurf na Pulpicie lub w Menu Start.',
             ],
             'mac_image': img_windsurf_ide,
@@ -971,111 +1085,112 @@ def build_steps(tmp_dir):
         {
             'title': 'Zainstaluj Node.js',
             'description': (
-                'Node.js to silnik, bez ktorego Claude nie uruchomi sie. '
-                'Instaluje sie jak kazdy normalny program — kilka klikniec.'
+                'Node.js to silnik, bez którego Claude nie uruchomi się. '
+                'Instaluje się jak każdy normalny program — kilka kliknięć.'
             ),
             'mac_steps': [
-                'Wejdz na strone: nodejs.org',
+                'Wejdź na stronę: nodejs.org',
                 'Kliknij zielony przycisk "Download Node.js (LTS)" — ten z napisem '
                 '"Recommended for most users". NIE klikaj "Current".',
-                'Plik .pkg pobierze sie — poczekaj az skonczy.',
-                'Otworz pobrany plik (kliknij dwukrotnie).',
-                'Klikaj "Kontynuuj" (Continue) przez kazdy ekran instalatora.',
-                'Na koncu kliknij "Zainstaluj" (Install). '
-                'Mac moze zapytac o haslo — wpisz swoje haslo do komputera.',
-                'Gotowe! Mozesz zamknac instalator.',
+                'Plik .pkg pobierze się — poczekaj aż skończy.',
+                'Otwórz pobrany plik (kliknij dwukrotnie).',
+                'Klikaj "Kontynuuj" (Continue) przez każdy ekran instalatora.',
+                'Na końcu kliknij "Zainstaluj" (Install). '
+                'Mac może zapytać o hasło — wpisz swoje hasło do komputera.',
+                'Gotowe! Możesz zamknąć instalator.',
             ],
             'win_steps': [
-                'Wejdz na strone: nodejs.org',
+                'Wejdź na stronę: nodejs.org',
                 'Kliknij zielony przycisk "Download Node.js (LTS)" — ten z napisem '
                 '"Recommended for most users". NIE klikaj "Current".',
-                'Plik .msi pobierze sie — poczekaj az skonczy.',
-                'Otworz pobrany plik (kliknij dwukrotnie).',
-                'Jesli Windows zapyta "Czy chcesz zezwolic..." — kliknij Tak.',
+                'Plik .msi pobierze się — poczekaj aż skończy.',
+                'Otwórz pobrany plik (kliknij dwukrotnie).',
+                'Jeśli Windows zapyta "Czy chcesz zezwolić..." — kliknij Tak.',
                 'Klikaj Next przez kolejne ekrany instalatora — nic nie zmieniaj.',
-                'Na koncu kliknij Install. Moze zapytac o haslo/zgode administratora.',
-                'Gotowe! Mozesz zamknac instalator.',
+                'Na końcu kliknij Install. Może zapytać o hasło/zgodę administratora.',
+                'Gotowe! Możesz zamknąć instalator.',
             ],
-            'image_path': ss_nodejs,
-            'image_caption': 'Strona nodejs.org — kliknij zielony przycisk LTS (ten po lewej).',
+            'mac_screenshot_desc': 'Strona nodejs.org — zielony przycisk "Download Node.js (LTS)" po lewej',
+            'win_screenshot_desc': 'Strona nodejs.org — zielony przycisk "Download Node.js (LTS)" po lewej',
         },
         {
-            'title': 'Otworz terminal w Windsurf i wpisz jedna komende',
+            'title': 'Otwórz terminal w Windsurf i wpisz jedną komendę',
             'description': (
-                'Terminal to okienko, w ktorym wpisujesz polecenia. '
-                'W Windsurf jest ukryte na dole ekranu — pokarzemy Ci jak je otworzyc.'
+                'Terminal to okienko, w którym wpisujesz polecenia. '
+                'W Windsurf jest ukryte na dole ekranu — pokażemy Ci jak je otworzyć.'
             ),
             'sub_steps': [
-                'Uruchom Windsurf (jesli jeszcze nie jest otwarty).',
-                'W gornym menu kliknij "Terminal" a potem "New Terminal". '
-                'Ewentualnie nacisnij klawisze Ctrl + ` '
-                '(tylni apostrof — klawisz obok cyfry 1 na klawiaturze).',
-                'Na dole ekranu pojawi sie ciemne okienko z kursorem — to terminal.',
-                'Kliknij w to okienko zeby je zaznaczyc.',
-                'Wpisz dokladnie te komende i nacisnij Enter: '
+                'Uruchom Windsurf (jeśli jeszcze nie jest otwarty).',
+                'W górnym menu kliknij "Terminal" a potem "New Terminal". '
+                'Ewentualnie naciśnij klawisze Ctrl + ` '
+                '(tylny apostrof — klawisz obok cyfry 1 na klawiaturze).',
+                'Na dole ekranu pojawi się ciemne okienko z kursorem — to terminal.',
+                'Kliknij w to okienko żeby je zaznaczyć.',
+                'Wpisz dokładnie tę komendę i naciśnij Enter: '
                 'npm install -g @anthropic-ai/claude-code',
-                'Poczekaj — moze trwac 1-3 minuty. Zobaczysz duzo tekstu — to normalne.',
-                'Gdy skonczy, pojawi sie nowa linia z kursorem — to znak ze gotowe.',
+                'Poczekaj — może trwać 1-3 minuty. Zobaczysz dużo tekstu — to normalne.',
+                'Gdy skończy, pojawi się nowa linia z kursorem — to znak że gotowe.',
                 'UWAGA dla Windows: zamiast zsh zobaczysz PowerShell (niebieski tekst) — to normalne, '
-                'komenda dziala tak samo.',
+                'komenda działa tak samo.',
             ],
-            'mac_image': img_windsurf_ide,
-            'win_image': img_windsurf_win,
-            'mac_image_caption': 'Mac: ciemny terminal z zielonym tekstem.',
-            'win_image_caption': 'Windows: niebieski PowerShell — to rowniez terminal, dziala tak samo.',
+            'image_path': img_npm_mac,
+            'image_caption': 'Mac: ciemny terminal z zielonym tekstem po zainstalowaniu.',
+            'screenshot_desc': 'Terminal w Windsurf po wpisaniu komendy npm install — widać dużo tekstu zakończonego nową linią',
         },
         {
-            'title': 'Otworz folder Onboarding w Windsurf',
+            'title': 'Otwórz folder Onboarding w Windsurf',
             'description': (
-                'Musisz wskazac Windsurfowi folder z plikami onboardingowymi '
-                '— ten sam folder, z ktorego czytasz ten dokument.'
+                'Musisz wskazać Windsurfowi folder z plikami onboardingowymi '
+                '— ten sam folder, z którego czytasz ten dokument.'
             ),
             'sub_steps': [
-                'W Windsurf kliknij "File" w gornym menu.',
-                'Kliknij "Open Folder..." (Otworz folder).',
-                'Pojawi sie okienko do wyboru folderu — znajdz i zaznacz folder "Onboarding".',
-                'Kliknij przycisk "Open" (lub "Otworz") na dole okienka.',
-                'Po lewej stronie Windsurf pojawi sie lista plikow z folderu Onboarding '
-                '— to znak ze zadzialalo.',
+                'W Windsurf kliknij "File" w górnym menu.',
+                'Kliknij "Open Folder..." (Otwórz folder).',
+                'Pojawi się okienko do wyboru folderu — znajdź i zaznacz folder "Onboarding".',
+                'Kliknij przycisk "Open" (lub "Otwórz") na dole okienka.',
+                'Po lewej stronie Windsurf pojawi się lista plików z folderu Onboarding '
+                '— to znak że zadziałało.',
             ],
+            'screenshot_desc': 'Windsurf z otwartym folderem Onboarding — po lewej stronie widać panel z plikami projektu',
         },
         {
-            'title': 'Uruchom Claude i zaloguj sie',
+            'title': 'Uruchom Claude i zaloguj się',
             'description': (
                 'Teraz uruchamiamy samego Claude — asystenta AI. '
-                'Przy pierwszym uruchomieniu otworzy sie przegladarka zebys sie zalogowal.'
+                'Przy pierwszym uruchomieniu otworzy się przeglądarka żebyś się zalogował.'
             ),
             'sub_steps': [
-                'W ciemnym okienku (terminal) na dole Windsurf kliknij zeby je zaznaczyc.',
-                'Wpisz: claude  i nacisnij Enter.',
-                'Claude moze zapytac o zgode na uruchomienie — jesli zobaczysz pytanie, '
+                'W ciemnym okienku (terminal) na dole Windsurf kliknij żeby je zaznaczyć.',
+                'Wpisz: claude  i naciśnij Enter.',
+                'Claude może zapytać o zgodę na uruchomienie — jeśli zobaczysz pytanie, '
                 'wpisz Y i Enter.',
-                'Automatycznie otworzy sie przegladarka z prosba o zalogowanie. '
-                'Jesli nie masz konta Anthropic — kliknij "Sign up" i utworz je teraz (bezplatne). '
-                'Jesli masz — zaloguj sie normalnie.',
-                'Po zalogowaniu wron do Windsurf — zostaw przegladarke otwarta.',
-                'W terminalu zobaczysz ze Claude czeka — pojawi sie cos w stylu: "Claude Code >"',
+                'Automatycznie otworzy się przeglądarka z prośbą o zalogowanie. '
+                'Jeśli nie masz konta Anthropic — kliknij "Sign up" i utwórz je teraz (bezpłatne). '
+                'Jeśli masz — zaloguj się normalnie.',
+                'Po zalogowaniu wróć do Windsurf — zostaw przeglądarkę otwartą.',
+                'W terminalu zobaczysz że Claude czeka — pojawi się coś w stylu: "Claude Code >"',
             ],
             'image_path': img_claude,
-            'image_caption': 'Tak wyglada uruchomiony Claude w terminalu Windsurf.',
+            'image_caption': 'Tak wygląda uruchomiony Claude w terminalu Windsurf.',
+            'screenshot_desc': 'Terminal pokazujący "Claude Code >" — znak że Claude jest uruchomiony i czeka',
         },
         {
-            'title': 'Wklej prompt z Czesci 2 — Claude zajmie sie reszta!',
+            'title': 'Wklej prompt z Części 2 — Claude zajmie się resztą!',
             'description': (
-                'To ostatni krok ktory robisz sam. '
-                'Dajesz Claude instrukcje i od tej chwili on prowadzi Cie przez cala konfiguracje '
-                '— po polsku, krok po kroku, czekajac az kazdy krok zrobisz.'
+                'To ostatni krok który robisz sam. '
+                'Dajesz Claude instrukcje i od tej chwili on prowadzi Cię przez całą konfigurację '
+                '— po polsku, krok po kroku, czekając aż każdy krok zrobisz.'
             ),
             'sub_steps': [
-                'Przejdz na nastepna strone tego dokumentu.',
-                'Znajdz swoj system — "Jesli masz Maca" lub "Jesli masz Windowsa" — '
-                'i zaznacz CALY tekst w niebieskiej ramce dla swojego systemu.',
+                'Przejdź na następną stronę tego dokumentu.',
+                'Znajdź swój system — "Jeśli masz Maca" lub "Jeśli masz Windowsa" — '
+                'i zaznacz CAŁY tekst w niebieskiej ramce dla swojego systemu.',
                 '(Mac) Skopiuj: Cmd+C  |  (Windows) Skopiuj: Ctrl+C',
-                'Wron do Windsurf i kliknij w ciemne okienko terminala.',
+                'Wróć do Windsurf i kliknij w ciemne okienko terminala.',
                 '(Mac) Wklej: Cmd+V  |  (Windows) Wklej: Ctrl+V',
-                'Nacisnij Enter.',
-                'Claude zacznie pisac do Ciebie i przeprowadzi Cie przez kazdy nastepny krok. '
-                'Wystarczy ze bedziesz odpowiadac "gotowe" gdy skonczysz kazdy krok.',
+                'Naciśnij Enter.',
+                'Claude zacznie pisać do Ciebie i przeprowadzi Cię przez każdy następny krok. '
+                'Wystarczy że będziesz odpowiadać "gotowe" gdy skończysz każdy krok.',
             ],
         },
     ]
@@ -1086,56 +1201,56 @@ def build_steps(tmp_dir):
 # ── Prompty handoff ────────────────────────────────────────────────────────────
 
 HANDOFF_PROMPT = """\
-Przeprowadz mnie przez konfiguracje srodowiska Claude Code.
+Przeprowadź mnie przez konfigurację środowiska Claude Code.
 
-Jestem nowym uzytkownikiem. Wlasnie zainstalowalem Windsurf i Claude Code CLI,
-jestem zalogowany. Pracuje w folderze Onboarding — zawiera podfolder setup/
+Jestem nowym użytkownikiem. Właśnie zainstalowałem Windsurf i Claude Code CLI,
+jestem zalogowany. Pracuję w folderze Onboarding — zawiera podfolder setup/
 z gotowymi plikami do skopiowania.
 
-Zasady dla kazdego kroku:
-- Tlumacz prosto, bez zargonu technicznego — jakbys mowil do osoby ktora
-  nigdy nie programowala
-- Podawaj JEDNA komende lub akcje na raz
-- Czekaj az powiem "gotowe" zanim przejdziesz do nastepnego kroku
-- Po kazdym kroku sprawdz czy zadzialalo
-- Jesli cos sie nie uda — pomoz mi to naprawic zanim pojdziemy dalej
+Zasady dla każdego kroku:
+- Tłumacz prosto, bez żargonu technicznego — jakbyś mówił do osoby która
+  nigdy nie programowała
+- Podawaj JEDNĄ komendę lub akcję na raz
+- Czekaj aż powiem "gotowe" zanim przejdziesz do następnego kroku
+- Po każdym kroku sprawdź czy zadziałało
+- Jeśli coś się nie uda — pomóż mi to naprawić zanim pójdziemy dalej
 
-CZESC A — Instalacja brakujacych narzedzi
+CZĘŚĆ A — Instalacja brakujących narzędzi
 
-1. Sprawdz czy mam Homebrew: brew --version
-   Jesli nie ma — zainstaluj. (Homebrew to sklep z narzediami dla Maca)
+1. Sprawdź czy mam Homebrew: brew --version
+   Jeśli nie ma — zainstaluj. (Homebrew to sklep z narzędziami dla Maca)
 2. Zainstaluj gh i jq: brew install gh jq
-   (gh = do laczenia z GitHub, jq = pomocnik konfiguracyjny)
+   (gh = do łączenia z GitHub, jq = pomocnik konfiguracyjny)
 3. Zaloguj mnie do GitHub: gh auth login
-   Wybierz: GitHub.com -> HTTPS -> zaloguj przez przegladarke
+   Wybierz: GitHub.com -> HTTPS -> zaloguj przez przeglądarkę
 
-CZESC B — Konfiguracja Claude
+CZĘŚĆ B — Konfiguracja Claude
 
-4. Utworz foldery: ~/.claude/skills/  ~/.claude/hooks/  ~/.claude/memory/
+4. Utwórz foldery: ~/.claude/skills/  ~/.claude/hooks/  ~/.claude/memory/
 5. Skopiuj skille z setup/skills/ do ~/.claude/skills/
    (state-start, catchup, setup-new-project)
-6. Skopiuj hook bezpieczenstwa: setup/hooks/security-scan.py -> ~/.claude/hooks/
+6. Skopiuj hook bezpieczeństwa: setup/hooks/security-scan.py -> ~/.claude/hooks/
    Nadaj uprawnienia: chmod +x
 7. Skopiuj status bar: setup/statusline-command.sh -> ~/.claude/
    Nadaj uprawnienia: chmod +x
 8. Wygeneruj plik konfiguracyjny ~/.claude/settings.json
-   z ustawieniami hooka i status baru (uzyj $HOME zamiast ~ przy sciezkach)
+   z ustawieniami hooka i status baru (użyj $HOME zamiast ~ przy ścieżkach)
 9. Zapytaj mnie o:
-   - w jakim jezyku chce rozmawiac z AI (np. polski)
-   - moj GitHub username
-   - gdzie trzymam foldery projektow (np. ~/Projects/)
+   - w jakim języku chcę rozmawiać z AI (np. polski)
+   - mój GitHub username
+   - gdzie trzymam foldery projektów (np. ~/Projects/)
    Potem skopiuj setup/global-claude-template.md -> ~/.claude/CLAUDE.md
-   i uzupelnij moje dane w miejscach oznaczonych [[...]]
+   i uzupełnij moje dane w miejscach oznaczonych [[...]]
 10. W pliku ~/.claude/skills/setup-new-project/SKILL.md
-    zamien GITHUB_USERNAME na moj GitHub username
-11. Weryfikacja koncowa: sprawdz ze wszystkie pliki istnieja,
-    pokaz zawartosc settings.json, przetestuj komende /state-start
+    zamień GITHUB_USERNAME na mój GitHub username
+11. Weryfikacja końcowa: sprawdź że wszystkie pliki istnieją,
+    pokaż zawartość settings.json, przetestuj komendę /state-start
 
-Na koncu wytlumacz mi jak stworzyc swoj pierwszy projekt:
-- jak skopiowac folder Onboarding jako szablon
-- jak uruchomic /setup-new-project zeby stworzyc repo na GitHub
+Na końcu wytłumacz mi jak stworzyć swój pierwszy projekt:
+- jak skopiować folder Onboarding jako szablon
+- jak uruchomić /setup-new-project żeby stworzyć repo na GitHub
 
-Pelny opis kazdego kroku: setup/onboarding-prompt.md\
+Pełny opis każdego kroku: setup/onboarding-prompt.md\
 """
 
 WIN_HANDOFF_PROMPT = (
@@ -1248,7 +1363,7 @@ def generate():
     add_welcome_section(doc)
 
     # ── Czesc 1: Kroki ──
-    add_section_heading(doc, 'Czesc 1 — Zrob to sam  (6 krokow)')
+    add_section_heading(doc, 'Część 1 — Zrób to sam  (6 kroków)')
 
     for i, step in enumerate(steps, start=1):
         add_step(
@@ -1269,14 +1384,14 @@ def generate():
 
     # ── Czesc 2: Prompty ──
     doc.add_page_break()
-    add_section_heading(doc, 'Czesc 2 — Tekst do wklejenia do Claude')
+    add_section_heading(doc, 'Część 2 — Tekst do wklejenia do Claude')
 
     instruction = doc.add_paragraph(
-        'Znajdz swoj system ponizej. Zaznacz CALY tekst w niebieskiej ramce, '
+        'Znajdź swój system poniżej. Zaznacz CAŁY tekst w niebieskiej ramce, '
         'skopiuj (Cmd+C na Macu / Ctrl+C na Windowsie) '
-        'i wklej do czarnego okienka w Windsurf gdzie dziala Claude '
+        'i wklej do czarnego okienka w Windsurf gdzie działa Claude '
         '(Cmd+V na Macu / Ctrl+V na Windowsie). '
-        'Nacisnij Enter. Claude zacznie rozmawiac z Toba i przeprowadzi Cie przez cala reszte.'
+        'Naciśnij Enter. Claude zacznie rozmawiać z Tobą i przeprowadzi Cię przez całą resztę.'
     )
     for r in instruction.runs:
         set_font(r, size=10)
@@ -1285,7 +1400,7 @@ def generate():
     mac_heading = doc.add_paragraph()
     mac_heading.paragraph_format.space_before = Pt(10)
     mac_heading.paragraph_format.space_after = Pt(4)
-    r = mac_heading.add_run('Jesli masz Maca — skopiuj to:')
+    r = mac_heading.add_run('Jeśli masz Maca — skopiuj to:')
     set_font(r, bold=True, size=11, color=(60, 60, 60))
 
     add_prompt_block(doc, HANDOFF_PROMPT)
@@ -1294,13 +1409,13 @@ def generate():
     win_heading = doc.add_paragraph()
     win_heading.paragraph_format.space_before = Pt(12)
     win_heading.paragraph_format.space_after = Pt(4)
-    r = win_heading.add_run('Jesli masz Windowsa — skopiuj to:')
+    r = win_heading.add_run('Jeśli masz Windowsa — skopiuj to:')
     set_font(r, bold=True, size=11, color=(0, 84, 166))
 
     add_prompt_block(doc, WIN_HANDOFF_PROMPT)
 
     note = doc.add_paragraph(
-        'Szczegolowy opis kazdego kroku konfiguracji: setup/onboarding-prompt.md'
+        'Szczegółowy opis każdego kroku konfiguracji: setup/onboarding-prompt.md'
     )
     note.paragraph_format.space_before = Pt(6)
     for r in note.runs:
