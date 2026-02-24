@@ -413,6 +413,123 @@ def add_step(doc, number, title, description, sub_steps=None,
             set_font(r, size=9, italic=True, color=(100, 100, 100))
 
 
+def add_welcome_section(doc):
+    """Dodaje przyjazny wstęp z korzyściami i szacunkiem czasu."""
+
+    # ── Powitanie ──
+    welcome = doc.add_paragraph()
+    welcome.paragraph_format.space_before = Pt(4)
+    welcome.paragraph_format.space_after = Pt(8)
+    r = welcome.add_run('Hej! Nie stresuj się — to prostsze niż myślisz.')
+    set_font(r, bold=True, size=13, color=(31, 73, 125))
+
+    p1 = doc.add_paragraph(
+        'Nie musisz być informatykiem ani znać się na programowaniu. '
+        'Ten onboarding jest zaprojektowany tak, żeby każdy — naprawdę każdy — '
+        'mógł przez niego przejść samodzielnie. '
+        'A jeśli coś będzie niejasne, Claude (asystent AI) '
+        'będzie przy Tobie na każdym kroku i wytłumaczy wszystko po ludzku.'
+    )
+    p1.paragraph_format.space_after = Pt(10)
+    for r in p1.runs:
+        set_font(r, size=10)
+
+    # ── Blok korzyści (zielone tło) ──
+    benefits_title = doc.add_paragraph()
+    benefits_title.paragraph_format.space_before = Pt(2)
+    benefits_title.paragraph_format.space_after = Pt(4)
+    r = benefits_title.add_run('Co zyskasz po instalacji?')
+    set_font(r, bold=True, size=11, color=(27, 94, 32))
+
+    BENEFITS = [
+        ('Asystent AI dostępny 24/7',
+         'Claude odpowiada na pytania, pisze teksty, tłumaczy dokumenty '
+         'i rozwiązuje problemy — o każdej porze dnia i nocy.'),
+        ('Oszczędzasz czas na co dzień',
+         'Zadania, które zajmowały Ci godziny, teraz trwają minuty. '
+         'Raporty, emaile, analizy — Claude robi to za Ciebie.'),
+        ('Tworzysz projekty jak profesjonalista',
+         'Windsurf daje Ci środowisko pracy, w którym Claude widzi Twoje pliki '
+         'i pomaga Ci w całym projekcie — nie tylko w jednej rozmowie.'),
+        ('AI pamięta Twoje preferencje',
+         'Po konfiguracji Claude zapamiętuje jak lubisz pracować, '
+         'w jakim języku, co jest dla Ciebie ważne — i stosuje to automatycznie.'),
+        ('Zawsze masz kogoś do pomocy',
+         'Nie wiesz jak coś zrobić? Zapytaj Claude. '
+         'Nie ocenia, nie się niecierpliwi, tłumaczy tyle razy ile potrzebujesz.'),
+    ]
+
+    for title, desc in BENEFITS:
+        bp = doc.add_paragraph()
+        bp.paragraph_format.left_indent = Cm(0.4)
+        bp.paragraph_format.space_before = Pt(3)
+        bp.paragraph_format.space_after = Pt(3)
+
+        # Zielone tło
+        pPr = bp._p.get_or_add_pPr()
+        shd = OxmlElement('w:shd')
+        shd.set(qn('w:val'), 'clear')
+        shd.set(qn('w:color'), 'auto')
+        shd.set(qn('w:fill'), 'F1F8F1')
+        pPr.append(shd)
+
+        # Zielony lewy border
+        pBdr = OxmlElement('w:pBdr')
+        left = OxmlElement('w:left')
+        left.set(qn('w:val'), 'single')
+        left.set(qn('w:sz'), '12')
+        left.set(qn('w:space'), '6')
+        left.set(qn('w:color'), '43A047')
+        pBdr.append(left)
+        pPr.append(pBdr)
+
+        check_run = bp.add_run('  ')
+        set_font(check_run, size=10)
+        title_run = bp.add_run(f'{title}  ')
+        set_font(title_run, bold=True, size=10, color=(27, 94, 32))
+        desc_run = bp.add_run(desc)
+        set_font(desc_run, size=10, color=(70, 70, 70))
+
+    # ── Szacunek czasu ──
+    time_para = doc.add_paragraph()
+    time_para.paragraph_format.space_before = Pt(12)
+    time_para.paragraph_format.space_after = Pt(4)
+
+    pPr = time_para._p.get_or_add_pPr()
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:val'), 'clear')
+    shd.set(qn('w:color'), 'auto')
+    shd.set(qn('w:fill'), 'FFF8E1')
+    pPr.append(shd)
+    pBdr = OxmlElement('w:pBdr')
+    for side in ['top', 'bottom', 'left', 'right']:
+        el = OxmlElement(f'w:{side}')
+        el.set(qn('w:val'), 'single')
+        el.set(qn('w:sz'), '4')
+        el.set(qn('w:space'), '4')
+        el.set(qn('w:color'), 'FFA000')
+        pBdr.append(el)
+    pPr.append(pBdr)
+
+    r1 = time_para.add_run('  Ile to zajmie?  ')
+    set_font(r1, bold=True, size=10, color=(230, 81, 0))
+    r2 = time_para.add_run(
+        'Około 20-30 minut — tyle co filiżanka kawy. '
+        'Pierwsze 5 kroków zrobisz sam w ok. 10-15 minut. '
+        'Resztą zajmie się Claude interaktywnie.'
+    )
+    set_font(r2, size=10, color=(80, 60, 0))
+
+    # ── Zachęta na końcu wstępu ──
+    closing = doc.add_paragraph(
+        'Gotowy? Zacznij od Kroku 1 poniżej. Powodzenia!'
+    )
+    closing.paragraph_format.space_before = Pt(8)
+    closing.paragraph_format.space_after = Pt(4)
+    for r in closing.runs:
+        set_font(r, size=10, italic=True, color=(100, 100, 100))
+
+
 def add_prompt_block(doc, text):
     """Dodaje niebieski blok z promptem do skopiowania."""
     para = doc.add_paragraph()
@@ -694,14 +811,7 @@ def generate():
     r = sub_para.add_run('Instrukcja startowa · macOS')
     set_font(r, size=11, color=(128, 128, 128))
 
-    intro = doc.add_paragraph(
-        'Masz przed sobą 6 prostych kroków. Nie musisz wiedzieć nic o programowaniu — '
-        'wystarczy klikać i wpisywać dokładnie to co widzisz. '
-        'Po 6. kroku Claude (asystent AI) przejmuje i prowadzi Cię przez resztę po polsku.'
-    )
-    intro.paragraph_format.space_after = Pt(6)
-    for r in intro.runs:
-        set_font(r, size=10)
+    add_welcome_section(doc)
 
     # ── Część 1: Kroki ──
     add_section_heading(doc, 'Część 1 — Zrób to sam  (6 kroków)')
