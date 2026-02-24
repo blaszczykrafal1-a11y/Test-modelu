@@ -50,6 +50,7 @@ node_modules/
 *.mdb
 *.accdb
 docs/input/*
+!docs/input/README.md
 
 # Sekrety i klucze
 *.env
