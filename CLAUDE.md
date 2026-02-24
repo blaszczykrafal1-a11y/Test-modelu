@@ -458,6 +458,34 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 - **Branch**: main
 - **Visibility**: private
 
+## Bezpieczeństwo — Ingerencja w system
+
+**STOP przed wykonaniem** — zatrzymaj się i wyjaśnij zanim zrobisz cokolwiek z tej listy:
+
+| Akcja | Przykład | Konsekwencje |
+|-------|----------|-------------|
+| Instalacja oprogramowania | `brew install`, `pip install -g`, `npm install -g` | Trwała zmiana systemu, może konfliktować z istniejącymi wersjami, zajmuje miejsce, trudna do cofnięcia |
+| Screenshoty / nagrywanie ekranu | `screencapture`, `osascript screenshot` | Przechwytuje zawartość ekranu włącznie z otwartymi oknami, hasłami, danymi prywatnymi |
+| Modyfikacja plików poza projektem | Zapis do `~/.zshrc`, `~/.ssh/`, `/etc/` | Zmienia globalne środowisko lub konfigurację systemu, może zepsuć inne projekty |
+| Polecenia z `sudo` | `sudo rm`, `sudo chmod` | Pełny dostęp do systemu, nieodwracalne zmiany |
+| Modyfikacja `~/.claude/` | Zmiana `settings.json`, hooków | Zmienia zachowanie Claude we wszystkich projektach |
+| Destruktywne operacje | `rm -rf`, `git reset --hard`, `git push --force` | Trwała utrata danych lub historii |
+
+**Format ostrzeżenia — użyj tego szablonu:**
+
+```
+UWAGA — zanim to zrobię, informuję:
+
+Chcę: [konkretna akcja, np. "zainstalować bibliotekę Pillow przez pip"]
+Po co: [powód, np. "żeby generować obrazki PNG do dokumentu"]
+Konsekwencje: [np. "trwała instalacja pakietu, ~5MB miejsca na dysku"]
+Alternatywa bez ingerencji: [jeśli istnieje, np. "mogę pominąć obrazki i użyć tekstu"]
+
+Czy zgadzasz się?
+```
+
+**Zasada:** wysoka autonomia dotyczy pracy w projekcie (pliki, git, kod). Zmiany w systemie operacyjnym i globalnym środowisku zawsze wymagają zgody.
+
 ## Memory Initialization
 
 Claude Code automatycznie tworzy folder pamięci per-projekt pod `~/.claude/projects/[hash]/memory/`.
