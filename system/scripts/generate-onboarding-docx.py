@@ -44,7 +44,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # True = robi realne screenshoty stron internetowych (otwiera przeglądarkę)
 # False = pomija screenshoty, szybsze generowanie
-TAKE_SCREENSHOTS = True
+TAKE_SCREENSHOTS = False
 
 IMG_WIDTH_PX = 520    # szerokość obrazków w pikselach
 IMG_WIDTH_IN  = 5.0   # szerokość obrazków w dokumencie Word (cale)
