@@ -520,11 +520,59 @@ def add_welcome_section(doc):
     )
     set_font(r2, size=10, color=(80, 60, 0))
 
+    # ── Wymagania przed startem ──
+    req_title = doc.add_paragraph()
+    req_title.paragraph_format.space_before = Pt(12)
+    req_title.paragraph_format.space_after = Pt(4)
+    r = req_title.add_run('Czego potrzebujesz przed startem?')
+    set_font(r, bold=True, size=11, color=(100, 30, 22))
+
+    REQUIREMENTS = [
+        ('Konto Anthropic (Claude)',
+         'Bezpłatne konto na claude.ai — bez tego nie zaloguje się Claude. '
+         'Jeśli nie masz: wejdź na claude.ai, kliknij "Sign up" i utwórz konto.'),
+        ('Konto GitHub',
+         'Bezpłatne konto na github.com — potrzebne do tworzenia projektów. '
+         'Jeśli nie masz: wejdź na github.com, kliknij "Sign up" i utwórz konto.'),
+        ('Mac z macOS (ta instrukcja)',
+         'Używasz Maca? Świetnie, ta instrukcja jest dla Ciebie. '
+         'Na Windowsie skorzystaj z osobnej instrukcji: onboarding-windows.docx'),
+        ('Połączenie z internetem',
+         'Potrzebne przez cały czas instalacji i późniejszej pracy z Claude.'),
+    ]
+
+    for title, desc in REQUIREMENTS:
+        rp = doc.add_paragraph()
+        rp.paragraph_format.left_indent = Cm(0.4)
+        rp.paragraph_format.space_before = Pt(3)
+        rp.paragraph_format.space_after = Pt(3)
+
+        pPr = rp._p.get_or_add_pPr()
+        shd = OxmlElement('w:shd')
+        shd.set(qn('w:val'), 'clear')
+        shd.set(qn('w:color'), 'auto')
+        shd.set(qn('w:fill'), 'FFF3F3')
+        pPr.append(shd)
+        pBdr = OxmlElement('w:pBdr')
+        left = OxmlElement('w:left')
+        left.set(qn('w:val'), 'single')
+        left.set(qn('w:sz'), '12')
+        left.set(qn('w:space'), '6')
+        left.set(qn('w:color'), 'E53935')
+        pBdr.append(left)
+        pPr.append(pBdr)
+
+        rp.add_run('  ')
+        t = rp.add_run(f'{title}  ')
+        set_font(t, bold=True, size=10, color=(183, 28, 28))
+        d = rp.add_run(desc)
+        set_font(d, size=10, color=(70, 70, 70))
+
     # ── Zachęta na końcu wstępu ──
     closing = doc.add_paragraph(
-        'Gotowy? Zacznij od Kroku 1 poniżej. Powodzenia!'
+        'Masz wszystko? Zacznij od Kroku 1 poniżej. Powodzenia!'
     )
-    closing.paragraph_format.space_before = Pt(8)
+    closing.paragraph_format.space_before = Pt(10)
     closing.paragraph_format.space_after = Pt(4)
     for r in closing.runs:
         set_font(r, size=10, italic=True, color=(100, 100, 100))
@@ -656,9 +704,10 @@ def build_steps(tmp_dir):
                 '(tylni apostrof — klawisz obok cyfry 1 na klawiaturze).',
                 'Na dole ekranu pojawi się ciemne okienko z kursorem — to terminal.',
                 'Kliknij w to ciemne okienko żeby je zaznaczyć.',
-                'Wpisz poniższą komendę i naciśnij Enter. '
-                'Poczekaj — może trwać 1-3 minuty (coś się będzie instalować).',
-                'Gdy skończy, w terminalu pojawi się nowa linia z kursorem — to znak że gotowe.',
+                'Wpisz dokładnie tę komendę i naciśnij Enter: '
+                'npm install -g @anthropic-ai/claude-code',
+                'Poczekaj — może trwać 1-3 minuty. Zobaczysz dużo tekstu — to normalne.',
+                'Gdy skończy, pojawi się nowa linia z kursorem — to znak że gotowe.',
             ],
             'image_path': img_windsurf_ide,
             'image_caption': 'Windsurf — Terminal otworzysz przez menu Terminal → New Terminal.',
@@ -688,11 +737,12 @@ def build_steps(tmp_dir):
             'sub_steps': [
                 'W ciemnym okienku (terminal) na dole Windsurf kliknij żeby je zaznaczyć.',
                 'Wpisz: claude  i naciśnij Enter.',
-                'Claude może zapytać o zgodę — jeśli zobaczysz pytanie, wpisz Y i Enter.',
-                'Automatycznie otworzy się przeglądarka z prośbą o zalogowanie.',
-                'Zaloguj się przez swoje konto Anthropic (lub utwórz konto jeśli nie masz).',
-                'Wróć do Windsurf — w terminalu zobaczysz że Claude czeka na Twój tekst. '
-                'Zobaczysz coś w stylu: "Claude Code > "',
+                'Claude może zapytać o zgodę na uruchomienie — jeśli zobaczysz pytanie, wpisz Y i Enter.',
+                'Automatycznie otworzy się przeglądarka z prośbą o zalogowanie. '
+                'Jeśli nie masz konta Anthropic — kliknij "Sign up" i utwórz je teraz (to bezpłatne). '
+                'Jeśli masz — zaloguj się normalnie.',
+                'Po zalogowaniu wróć do Windsurf — zostaw przeglądarkę otwartą, po prostu wróć do okna Windsurf.',
+                'W terminalu zobaczysz że Claude czeka — pojawi się coś w stylu: "Claude Code >"',
             ],
             'image_path': img_claude,
             'image_caption': 'Tak wygląda uruchomiony Claude w terminalu Windsurf.',
