@@ -110,7 +110,6 @@ open ~/.claude/CLAUDE.md
 ```
 
 Zmień co najmniej:
-- `[[TWOJE_IMIE]]` — Twoje imię
 - `[[TWOJ_OS]]` — wersja systemu (`sw_vers -productVersion`)
 - `[[TWOJE_PROJEKTY]]` — ścieżka do folderów projektów (np. `~/Projects/`)
 - `[[GITHUB_USERNAME]]` — Twoja nazwa konta GitHub
@@ -158,14 +157,6 @@ cp setup/hooks/security-scan.py ~/.claude/hooks/security-scan.py
 chmod +x ~/.claude/hooks/security-scan.py
 ```
 
-- [ ] Zarejestruj hook w konfiguracji Claude Code:
-
-```bash
-claude config set hooks.pre_tool_use "python3 ~/.claude/hooks/security-scan.py"
-```
-
-> **Jak działa:** przed każdym Write/Edit/Bash Claude wysyła treść do skryptu. Jeśli znajdzie sekret lub plik z danymi klientów — blokuje operację i pokazuje co znalazł.
-
 ### 2.5 — Status line
 
 Status line wyświetla model i zużycie kontekstu w terminalu.
@@ -177,18 +168,46 @@ cp setup/statusline-command.sh ~/.claude/statusline-command.sh
 chmod +x ~/.claude/statusline-command.sh
 ```
 
-- [ ] Zarejestruj w konfiguracji:
-
-```bash
-claude config set statusCommand "~/.claude/statusline-command.sh"
-```
-
 **Format po konfiguracji:**
 ```
 [Claude Sonnet 4.6] Context: 87% remaining | Tokens: 25000/200000
 ```
 
 Kolor zmienia się gdy kontekst spada poniżej 70% (żółty) i 60% (czerwony).
+
+### 2.6 — Konfiguracja Claude Code (settings.json)
+
+Hook i status line rejestruje się przez `~/.claude/settings.json`. Komenda poniżej tworzy go automatycznie z Twoją ścieżką:
+
+- [ ] Wygeneruj settings.json:
+
+```bash
+cat > ~/.claude/settings.json << EOF
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash $HOME/.claude/statusline-command.sh"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $HOME/.claude/hooks/security-scan.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+```
+
+> `$HOME` zostanie automatycznie zamieniony na Twoją ścieżkę (np. `/Users/jankowalski`).
+
+> **Jak działa hook:** przed każdym Write/Edit/Bash Claude wysyła treść do skryptu. Jeśli znajdzie sekret lub plik z danymi — blokuje operację i pokazuje co znalazł.
 
 ### Weryfikacja Fazy 2
 
@@ -203,13 +222,13 @@ ls ~/.claude/hooks/security-scan.py
 ls ~/.claude/statusline-command.sh
 ```
 
-- [ ] Sprawdź konfigurację Claude:
+- [ ] Sprawdź settings.json:
 
 ```bash
-claude config list
+cat ~/.claude/settings.json
 ```
 
-Powinien pokazać `statusCommand` i `hooks.pre_tool_use`.
+Powinien zawierać sekcje `statusLine` i `hooks`.
 
 ---
 
@@ -247,13 +266,25 @@ Template to gotowa struktura dla każdego nowego projektu.
 
 ### 4.1 — Skopiuj Template
 
+Folder Onboarding jest jednocześnie instrukcją i templatem dla nowych projektów. Skopiuj go i usuń pliki onboardingowe, których nie potrzebujesz w nowym projekcie.
+
 - [ ] Zduplikuj folder:
 
 ```bash
 cp -r /ścieżka/do/Onboarding ~/Projects/MojNoweProjekt
 ```
 
-> Zamień `/ścieżka/do/Onboarding` na ścieżkę do tego folderu, a `MojNoweProjekt` na nazwę Twojego projektu.
+> Zamień `/ścieżka/do/Onboarding` na ścieżkę do tego folderu, a `MojNoweProjekt` na nazwę projektu.
+
+- [ ] Usuń pliki onboardingowe z nowego projektu:
+
+```bash
+rm ~/Projects/MojNoweProjekt/ONBOARDING.md
+rm ~/Projects/MojNoweProjekt/CHECKLIST.md
+rm -rf ~/Projects/MojNoweProjekt/setup/
+```
+
+> Po tym zostaje czysta struktura Template: `CLAUDE.md`, `docs/`, `system/`, `.claude/`.
 
 - [ ] Otwórz folder w swoim edytorze kodu (np. Cursor, Windsurf, VS Code)
 
