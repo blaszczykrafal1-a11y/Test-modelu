@@ -1,9 +1,14 @@
-# CLAUDE.md - PROJECT_NAME
+# CLAUDE.md - Onboarding
 
 ## Project Overview
 
-<!-- Wypełnij po zduplikowaniu template -->
-<!-- Co robi ten projekt, jaki ma cel, jakie narzędzia/API używa -->
+Folder onboardingowy dla nowych osób dołączających do środowiska Claude Code.
+Zawiera kompletną instrukcję setup krok po kroku (`ONBOARDING.md`), gotowe pliki
+do skopiowania (`setup/`) oraz checklistę weryfikacyjną (`CHECKLIST.md`).
+
+Nie wymaga n8n. Pokrywa: Claude Code CLI, globalna konfiguracja (`~/.claude/`),
+skille (state-start, catchup, setup-new-project), security hook, status line,
+Template projektowy.
 
 ## Project Structure
 
