@@ -195,87 +195,107 @@ def add_prompt_block(doc, prompt_text):
 STEPS = [
     {
         'title': 'Pobierz i zainstaluj Windsurf',
-        'description': 'Windsurf to edytor kodu (IDE). Pobierz instalator, uruchom i zainstaluj.',
-        'commands': ['https://windsurf.com/download'],
+        'description': (
+            'Windsurf to program, w którym będziesz pracować z asystentem AI. '
+            'Wejdź na poniższą stronę, pobierz plik instalacyjny i zainstaluj '
+            'go tak jak każdy inny program na Macu (kliknij, przeciągnij do Applications).'
+        ),
+        'commands': ['windsurf.com/download'],
     },
     {
-        'title': 'Zainstaluj nvm i Node.js',
-        'description': 'nvm to menedżer wersji Node.js. Uruchom w terminalu systemowym (nie w Windsurf). Po instalacji ZAMKNIJ terminal i otwórz ponownie.',
-        'commands': [
-            'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash',
-            '# Po ponownym otwarciu terminala:',
-            'nvm install --lts',
-            'node --version    # powinien pokazać v22.x.x lub wyżej',
-        ],
+        'title': 'Pobierz i zainstaluj Node.js',
+        'description': (
+            'Node.js to silnik, którego Claude potrzebuje żeby w ogóle ruszyć. '
+            'Wejdź na stronę poniżej, kliknij zielony przycisk "LTS" i zainstaluj '
+            'pobrany plik tak jak poprzednio.'
+        ),
+        'commands': ['nodejs.org  →  kliknij zielony przycisk LTS'],
     },
     {
-        'title': 'Zainstaluj Homebrew',
-        'description': 'Homebrew to menedżer pakietów dla macOS. Potrzebny do instalacji gh i jq.',
-        'commands': [
-            '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
-        ],
-    },
-    {
-        'title': 'Zainstaluj gh i jq',
-        'description': 'gh = GitHub CLI (tworzenie repozytoriów). jq = narzędzie do JSON (status line Claude).',
-        'commands': ['brew install gh jq'],
-    },
-    {
-        'title': 'Zainstaluj Claude Code CLI',
-        'description': 'Claude Code to asystent AI działający w terminalu. Instalacja przez npm.',
+        'title': 'Otwórz Windsurf i wpisz jedną komendę',
+        'description': (
+            'Uruchom Windsurf. Na dole ekranu zobaczysz czarne okienko — to "terminal", '
+            'miejsce gdzie wpisujesz polecenia. Kliknij w to okienko, wpisz poniższe '
+            'i naciśnij Enter. Poczekaj aż skończy (może chwilę potrwać).'
+        ),
         'commands': ['npm install -g @anthropic-ai/claude-code'],
     },
     {
         'title': 'Otwórz folder Onboarding w Windsurf',
-        'description': 'W Windsurf: File → Open Folder → wybierz folder Onboarding (ten który właśnie czytasz).',
+        'description': (
+            'W Windsurf kliknij u góry: File → Open Folder, '
+            'a potem wskaż folder Onboarding — ten, który właśnie masz.'
+        ),
         'commands': None,
     },
     {
-        'title': 'Uruchom Claude Code i zaloguj się',
-        'description': 'Otwórz terminal w Windsurf: Ctrl+` (backtick). Uruchom claude — otworzy przeglądarkę do logowania przez konto Anthropic.',
+        'title': 'Uruchom Claude i zaloguj się',
+        'description': (
+            'W czarnym okienku (terminal) wpisz claude i naciśnij Enter. '
+            'Otworzy się przeglądarka — zaloguj się przez swoje konto Anthropic. '
+            'Wróć do Windsurf. Claude czeka na Ciebie w terminalu.'
+        ),
         'commands': ['claude'],
     },
     {
-        'title': 'Zaloguj się do GitHub CLI',
-        'description': 'Potrzebne do tworzenia repozytoriów przez /setup-new-project. Wybierz: GitHub.com → HTTPS → zaloguj przez przeglądarkę.',
-        'commands': ['gh auth login'],
-    },
-    {
-        'title': 'Wklej prompt do Claude — resztą zajmie się AI',
-        'description': 'Skopiuj prompt z Części 2 poniżej i wklej go do terminala Windsurf gdzie działa Claude. Claude przeprowadzi Cię przez całą konfigurację.',
+        'title': 'Wklej prompt z Części 2 — i gotowe!',
+        'description': (
+            'To ostatni krok który robisz sam. Skopiuj cały tekst z niebieskiej ramki '
+            'na następnej stronie, wklej go do terminala w Windsurf (Ctrl+V lub kliknij prawym → Paste) '
+            'i naciśnij Enter. Od tej chwili Claude przejmuje stery i przeprowadza Cię '
+            'przez całą resztę krok po kroku.'
+        ),
         'commands': None,
     },
 ]
 
-# Treść prompta (skrócona wersja do dokumentu)
+# Treść prompta — Claude ogarnie resztę instalacji i całą konfigurację
 HANDOFF_PROMPT = """\
 Przeprowadź mnie przez konfigurację środowiska Claude Code.
 
 Jestem nowym użytkownikiem. Właśnie zainstalowałem Windsurf i Claude Code CLI,
-jestem zalogowany i pracuję w folderze Onboarding który zawiera setup/ z plikami
-do skopiowania.
+jestem zalogowany. Pracuję w folderze Onboarding — zawiera podfolder setup/
+z gotowymi plikami do skopiowania.
 
-Przeprowadź mnie kolejno przez każdy krok. Na każdym kroku:
-- wyjaśnij krótko co robimy i dlaczego
-- podaj dokładną komendę
-- poczekaj aż powiem "gotowe" zanim przejdziesz dalej
-- sprawdź że krok się powiódł
+Zasady dla każdego kroku:
+- Tłumacz prosto, bez żargonu technicznego — jakbyś mówił do osoby która
+  nigdy nie programowała
+- Podawaj JEDNĄ komendę na raz
+- Czekaj aż powiem "gotowe" zanim przejdziesz do następnego kroku
+- Po każdym kroku sprawdź czy zadziałało
 
-Kroki:
-1. Utwórz strukturę ~/.claude/skills/, ~/.claude/hooks/, ~/.claude/memory/
-2. Skopiuj foldery setup/skills/ do ~/.claude/skills/ (state-start, catchup, setup-new-project)
-3. Skopiuj setup/hooks/security-scan.py do ~/.claude/hooks/ i chmod +x
-4. Skopiuj setup/statusline-command.sh do ~/.claude/ i chmod +x
-5. Wygeneruj ~/.claude/settings.json z konfiguracją hooka i status line (użyj $HOME)
-6. Zapytaj mnie o: język pracy z AI, GitHub username, ścieżkę do projektów.
-   Skopiuj setup/global-claude-template.md do ~/.claude/CLAUDE.md i wypełnij wartości.
-7. W ~/.claude/skills/setup-new-project/SKILL.md zamień GITHUB_USERNAME na mój username.
-8. Zweryfikuj setup: sprawdź pliki, cat ~/.claude/settings.json, test /state-start.
+CZĘŚĆ A — Instalacja brakujących narzędzi
 
-Na końcu powiedz jak skopiować folder Onboarding jako template dla pierwszego projektu
-i uruchomić /setup-new-project.
+1. Sprawdź czy mam Homebrew (brew --version). Jeśli nie — zainstaluj.
+   (Homebrew to sklep z narzędziami dla Maca, będzie potrzebny za chwilę)
+2. Zainstaluj gh i jq: brew install gh jq
+   (gh = logowanie do GitHub, jq = pomocnik do plików konfiguracyjnych)
+3. Zaloguj mnie do GitHub: gh auth login
+   Wybierz: GitHub.com → HTTPS → zaloguj przez przeglądarkę
 
-Pełny prompt z opisem kroków: setup/onboarding-prompt.md\
+CZĘŚĆ B — Konfiguracja Claude
+
+4. Utwórz foldery: ~/.claude/skills/  ~/.claude/hooks/  ~/.claude/memory/
+5. Skopiuj skille z setup/skills/ do ~/.claude/skills/
+   (state-start, catchup, setup-new-project)
+6. Skopiuj security hook: setup/hooks/security-scan.py → ~/.claude/hooks/ + chmod +x
+7. Skopiuj status line: setup/statusline-command.sh → ~/.claude/ + chmod +x
+8. Wygeneruj ~/.claude/settings.json z konfiguracją hooka i status line
+   (użyj $HOME zamiast ~ przy ścieżkach — to ważne)
+9. Zapytaj mnie o:
+   - język pracy z AI (np. polski / angielski)
+   - mój GitHub username
+   - gdzie trzymam projekty (np. ~/Projects/)
+   Skopiuj setup/global-claude-template.md → ~/.claude/CLAUDE.md
+   i zastąp wszystkie znaczniki [[...]] moimi danymi
+10. W ~/.claude/skills/setup-new-project/SKILL.md zamień GITHUB_USERNAME
+    na mój GitHub username
+11. Weryfikacja: pokaż listę plików, wyświetl settings.json, przetestuj /state-start
+
+Na końcu powiedz mi jak stworzyć swój pierwszy projekt korzystając z tego folderu
+jako szablonu i jak uruchomić /setup-new-project.
+
+Pełny opis każdego kroku znajdziesz w: setup/onboarding-prompt.md\
 """
 
 
@@ -311,16 +331,16 @@ def generate():
 
     # Intro
     intro = doc.add_paragraph(
-        'Ten dokument przeprowadza przez instalację środowiska pracy z Claude Code. '
-        'Część 1 to kroki ręczne — wykonaj je samodzielnie. Po dotarciu do Kroku 9 '
-        'przekazujesz sterowanie Claude, który przeprowadzi Cię przez resztę konfiguracji.'
+        'Masz przed sobą 6 kroków. Pierwsze 5 robisz sam — to proste rzeczy: '
+        'pobranie programów i wpisanie jednej komendy. W kroku 6 wklejasz gotowy tekst '
+        'do Claude i od tej chwili asystent AI przeprowadza Cię przez wszystko sam.'
     )
     intro.paragraph_format.space_after = Pt(4)
     for run in intro.runs:
         set_font(run, size=10)
 
     # ── Część 1: Instalacja ──
-    add_section_heading(doc, 'Część 1 — Instalacja  (wykonaj ręcznie)')
+    add_section_heading(doc, 'Część 1 — Zrób to sam  (6 prostych kroków)')
 
     for i, step in enumerate(STEPS, start=1):
         add_step(
@@ -334,12 +354,14 @@ def generate():
     # ── Część 2: Prompt dla Claude ──
     doc.add_page_break()
 
-    add_section_heading(doc, 'Część 2 — Prompt dla Claude')
+    add_section_heading(doc, 'Część 2 — Tekst do wklejenia do Claude')
 
     instruction = doc.add_paragraph(
-        'Skopiuj poniższy prompt i wklej do terminala Windsurf gdzie działa Claude Code '
-        '(Ctrl+V lub kliknij prawym → Paste). Od tego momentu Claude przeprowadza Cię '
-        'przez całą konfigurację interaktywnie.'
+        'Zaznacz cały tekst w niebieskiej ramce poniżej (kliknij i Ctrl+A lub zaznacz myszką), '
+        'skopiuj (Ctrl+C), a potem wklej do czarnego okienka w Windsurf gdzie działa Claude '
+        '(Ctrl+V lub kliknij prawym → Paste). Naciśnij Enter. '
+        'Claude zacznie rozmawiać z Tobą i przeprowadzi Cię przez całą resztę konfiguracji — '
+        'krok po kroku, po polsku.'
     )
     for run in instruction.runs:
         set_font(run, size=10)
@@ -348,7 +370,7 @@ def generate():
     add_prompt_block(doc, HANDOFF_PROMPT)
 
     note = doc.add_paragraph(
-        'Pełna wersja prompta z opisem każdego kroku: setup/onboarding-prompt.md'
+        'Szczegółowy opis każdego kroku konfiguracji: setup/onboarding-prompt.md'
     )
     note.paragraph_format.space_before = Pt(6)
     for run in note.runs:
