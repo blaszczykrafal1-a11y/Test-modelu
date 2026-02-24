@@ -1183,11 +1183,10 @@ def build_steps(tmp_dir):
             ),
             'sub_steps': [
                 'Przejdź na następną stronę tego dokumentu.',
-                'Znajdź swój system — "Jeśli masz Maca" lub "Jeśli masz Windowsa" — '
-                'i zaznacz CAŁY tekst w niebieskiej ramce dla swojego systemu.',
-                '(Mac) Skopiuj: Cmd+C  |  (Windows) Skopiuj: Ctrl+C',
+                'Zaznacz CAŁY tekst w niebieskiej ramce.',
+                'Skopiuj go: Cmd+C na Macu  lub  Ctrl+C na Windowsie.',
                 'Wróć do Windsurf i kliknij w ciemne okienko terminala.',
-                '(Mac) Wklej: Cmd+V  |  (Windows) Wklej: Ctrl+V',
+                'Wklej: Cmd+V na Macu  lub  Ctrl+V na Windowsie.',
                 'Naciśnij Enter.',
                 'Claude zacznie pisać do Ciebie i przeprowadzi Cię przez każdy następny krok. '
                 'Wystarczy że będziesz odpowiadać "gotowe" gdy skończysz każdy krok.',
@@ -1202,130 +1201,93 @@ def build_steps(tmp_dir):
 
 HANDOFF_PROMPT = """\
 Przeprowadź mnie przez konfigurację środowiska Claude Code.
+Jestem nowym użytkownikiem — właśnie zainstalowałem Windsurf i Claude Code CLI,
+jestem zalogowany i pracuję w folderze Onboarding (zawiera podfolder setup/).
 
-Jestem nowym użytkownikiem. Właśnie zainstalowałem Windsurf i Claude Code CLI,
-jestem zalogowany. Pracuję w folderze Onboarding — zawiera podfolder setup/
-z gotowymi plikami do skopiowania.
+Zasady: tłumacz prosto bez żargonu, jedna komenda na raz, czekaj na "gotowe",
+sprawdzaj po każdym kroku, napraw błędy zanim przejdziesz dalej.
 
-Zasady dla każdego kroku:
-- Tłumacz prosto, bez żargonu technicznego — jakbyś mówił do osoby która
-  nigdy nie programowała
-- Podawaj JEDNĄ komendę lub akcję na raz
-- Czekaj aż powiem "gotowe" zanim przejdziesz do następnego kroku
-- Po każdym kroku sprawdź czy zadziałało
-- Jeśli coś się nie uda — pomóż mi to naprawić zanim pójdziemy dalej
+KROK 0 — Wykryj mój system: uruchom `uname -s` (macOS → Darwin) lub sprawdź
+czy jesteś w PowerShell (Windows). Przez całą resztę używaj właściwych komend.
 
-CZĘŚĆ A — Instalacja brakujących narzędzi
+CZĘŚĆ A — Narzędzia
 
-1. Sprawdź czy mam Homebrew: brew --version
-   Jeśli nie ma — zainstaluj. (Homebrew to sklep z narzędziami dla Maca)
-2. Zainstaluj gh i jq: brew install gh jq
-   (gh = do łączenia z GitHub, jq = pomocnik konfiguracyjny)
-3. Zaloguj mnie do GitHub: gh auth login
-   Wybierz: GitHub.com -> HTTPS -> zaloguj przez przeglądarkę
+1. Sprawdź `gh --version` i `jq --version`. Jeśli brak:
+   macOS: sprawdź Homebrew (brew --version), zainstaluj jeśli brak,
+          potem: brew install gh jq
+   Windows: winget install GitHub.cli + winget install jqlang.jq
+            (potem zamknij i otwórz nowy terminal)
+
+2. Zapytaj czy mam konto github.com (jeśli nie — powiedz żeby założyć).
+   Następnie: gh auth login → GitHub.com → HTTPS → przez przeglądarkę
+   Sprawdź: gh auth status
 
 CZĘŚĆ B — Konfiguracja Claude
 
-4. Utwórz foldery: ~/.claude/skills/  ~/.claude/hooks/  ~/.claude/memory/
-5. Skopiuj skille z setup/skills/ do ~/.claude/skills/
-   (state-start, catchup, setup-new-project)
-6. Skopiuj hook bezpieczeństwa: setup/hooks/security-scan.py -> ~/.claude/hooks/
-   Nadaj uprawnienia: chmod +x
-7. Skopiuj status bar: setup/statusline-command.sh -> ~/.claude/
-   Nadaj uprawnienia: chmod +x
-8. Wygeneruj plik konfiguracyjny ~/.claude/settings.json
-   z ustawieniami hooka i status baru (użyj $HOME zamiast ~ przy ścieżkach)
-9. Zapytaj mnie o:
-   - w jakim języku chcę rozmawiać z AI (np. polski)
-   - mój GitHub username
-   - gdzie trzymam foldery projektów (np. ~/Projects/)
-   Potem skopiuj setup/global-claude-template.md -> ~/.claude/CLAUDE.md
-   i uzupełnij moje dane w miejscach oznaczonych [[...]]
-10. W pliku ~/.claude/skills/setup-new-project/SKILL.md
-    zamień GITHUB_USERNAME na mój GitHub username
-11. Weryfikacja końcowa: sprawdź że wszystkie pliki istnieją,
-    pokaż zawartość settings.json, przetestuj komendę /state-start
+3. Utwórz foldery:
+   macOS:   mkdir -p ~/.claude/skills ~/.claude/hooks ~/.claude/memory
+   Windows: New-Item -ItemType Directory -Force "$HOME/.claude/skills",
+            "$HOME/.claude/hooks","$HOME/.claude/memory"
 
-Na końcu wytłumacz mi jak stworzyć swój pierwszy projekt:
-- jak skopiować folder Onboarding jako szablon
-- jak uruchomić /setup-new-project żeby stworzyć repo na GitHub
+4. Skopiuj skille z setup/skills/ do ~/.claude/skills/:
+   macOS:   cp -r setup/skills/* ~/.claude/skills/
+   Windows: Copy-Item -Recurse setup\skills\* "$HOME\.claude\skills\"
+   Sprawdź: ls ~/.claude/skills/ → state-start, catchup, setup-new-project
 
-Pełny opis każdego kroku: setup/onboarding-prompt.md\
+5. Skopiuj security hook:
+   macOS:   cp setup/hooks/security-scan.py ~/.claude/hooks/
+            chmod +x ~/.claude/hooks/security-scan.py
+   Windows: Copy-Item setup\hooks\security-scan.py "$HOME\.claude\hooks\"
+
+6. Skopiuj statusline:
+   macOS:   cp setup/statusline-command.sh ~/.claude/
+            chmod +x ~/.claude/statusline-command.sh
+   Windows: Copy-Item setup\statusline-command.sh "$HOME\.claude\"
+
+7. Wygeneruj ~/.claude/settings.json z absolutnymi ścieżkami (NIE ~):
+   macOS (bash heredoc — $HOME rozwinie się automatycznie):
+     cat > ~/.claude/settings.json << EOF
+     { "model": "sonnet",
+       "statusLine": {"type":"command",
+         "command":"bash $HOME/.claude/statusline-command.sh"},
+       "hooks": {"PreToolUse": [{"matcher":"Write|Edit|Bash",
+         "hooks":[{"type":"command",
+           "command":"python3 $HOME/.claude/hooks/security-scan.py"}]}]} }
+     EOF
+   Windows (PowerShell):
+     $h = $env:USERPROFILE
+     @"{ "model":"sonnet",
+       "statusLine":{"type":"command","command":"bash $h/.claude/statusline-command.sh"},
+       "hooks":{"PreToolUse":[{"matcher":"Write|Edit|Bash",
+         "hooks":[{"type":"command",
+           "command":"python3 $h/.claude/hooks/security-scan.py"}]}]} }"@ |
+     Set-Content "$HOME\.claude\settings.json"
+   Sprawdź: ścieżki muszą być absolutne np. /Users/... lub C:\Users\...
+
+8. Skonfiguruj CLAUDE.md — zapytaj mnie o:
+   język pracy z AI / GitHub username / ścieżka do projektów
+   Skopiuj setup/global-claude-template.md → ~/.claude/CLAUDE.md
+   i uzupełnij wszystkie placeholdery [[...]].
+
+9. Zaktualizuj setup-new-project:
+   W ~/.claude/skills/setup-new-project/SKILL.md zamień GITHUB_USERNAME
+   na mój username.
+
+CZĘŚĆ C — Weryfikacja końcowa
+
+Sprawdź każdy punkt i podaj wynik jako listę z: OK lub BŁĄD:
+1. ls ~/.claude/skills/ → state-start, catchup, setup-new-project
+2. ls ~/.claude/hooks/ → security-scan.py
+3. ls ~/.claude/ → statusline-command.sh, settings.json, CLAUDE.md
+4. Zawartość settings.json → ścieżki absolutne (nie ~)
+5. gh auth status → GitHub zalogowany
+6. Uruchom /state-start → plik .claude/session-state.md zapisany
+
+Jeśli wszystko OK → powiedz "Środowisko gotowe!" i wyjaśnij w skrócie:
+- jak stworzyć pierwszy projekt (/setup-new-project)
+- kiedy używać /state-start i /catchup
+Jeśli cokolwiek nie OK → napraw zanim zakończysz.\
 """
-
-WIN_HANDOFF_PROMPT = (
-    "Przeprowadź mnie przez konfigurację środowiska Claude Code.\n"
-    "\n"
-    "Jestem nowym użytkownikiem na WINDOWS 10/11. Właśnie zainstalowałem Windsurf\n"
-    "i Claude Code CLI, jestem zalogowany. Pracuję w folderze Onboarding — zawiera\n"
-    "podfolder setup/ z gotowymi plikami do skopiowania.\n"
-    "\n"
-    "Zasady dla każdego kroku:\n"
-    "- Tłumacz prosto, bez żargonu — jakbyś mówił do osoby która nigdy nie programowała\n"
-    "- Używaj komend dla Windows (PowerShell), NIE dla macOS\n"
-    "- Jedna komenda na raz, czekaj na 'gotowe', sprawdzaj po każdym kroku\n"
-    "\n"
-    "CZĘŚĆ A — Instalacja narzędzi (jeśli brakuje):\n"
-    "\n"
-    "1. Sprawdź: winget --version\n"
-    "   Jeśli brak — powiedz żeby zainstalować 'App Installer' z Microsoft Store.\n"
-    "2. Zainstaluj narzędzia:\n"
-    "   winget install GitHub.cli\n"
-    "   winget install jqlang.jq\n"
-    "3. Zamknij i otwórz nowy terminal w Windsurf (żeby narzędzia były widoczne).\n"
-    "4. Zapytaj czy user ma konto github.com. Jeśli nie — powiedz żeby założył (bezpłatne).\n"
-    "   Potem: gh auth login  (GitHub.com -> HTTPS -> zaloguj przez przeglądarkę)\n"
-    "\n"
-    "CZĘŚĆ B — Konfiguracja Claude:\n"
-    "\n"
-    "5. Utwórz foldery konfiguracyjne:\n"
-    "   New-Item -ItemType Directory -Force $HOME/.claude/skills\n"
-    "   New-Item -ItemType Directory -Force $HOME/.claude/hooks\n"
-    "   New-Item -ItemType Directory -Force $HOME/.claude/memory\n"
-    "6. Skopiuj skille z setup/skills/ do $HOME/.claude/skills/\n"
-    "   (state-start, catchup, setup-new-project)\n"
-    "7. Skopiuj hook: setup/hooks/security-scan.py -> $HOME/.claude/hooks/\n"
-    "8. Skopiuj status bar: setup/statusline-command.sh -> $HOME/.claude/\n"
-    "9. Wygeneruj $HOME/.claude/settings.json z DOKŁADNIE taką strukturą:\n"
-    "   (użyj $env:USERPROFILE żeby ścieżki były absolutne)\n"
-    "\n"
-    '   $home = $env:USERPROFILE\n'
-    '   $json = @"\n'
-    '   {\n'
-    '     "model": "sonnet",\n'
-    '     "statusLine": {\n'
-    '       "type": "command",\n'
-    '       "command": "bash $home/.claude/statusline-command.sh"\n'
-    '     },\n'
-    '     "hooks": {\n'
-    '       "PreToolUse": [{\n'
-    '         "matcher": "Write|Edit|Bash",\n'
-    '         "hooks": [{ "type": "command",\n'
-    '           "command": "python3 $home/.claude/hooks/security-scan.py" }]\n'
-    '       }]\n'
-    '     }\n'
-    '   }\n'
-    '   "@\n'
-    '   $json | Set-Content $HOME/.claude/settings.json\n'
-    "\n"
-    "   Sprawdź: Get-Content $HOME/.claude/settings.json\n"
-    "   Ścieżki muszą zawierać pełną ścieżkę (C:\\Users\\...), nie ~.\n"
-    "\n"
-    "10. Zapytaj o: język AI, GitHub username, ścieżka projektów.\n"
-    "    Skopiuj setup/global-claude-template.md -> $HOME/.claude/CLAUDE.md\n"
-    "    i wypełnij miejsca oznaczone [[...]] moimi danymi.\n"
-    "11. W $HOME/.claude/skills/setup-new-project/SKILL.md\n"
-    "    zamień GITHUB_USERNAME na mój GitHub username.\n"
-    "12. Weryfikacja końcowa:\n"
-    "    Get-ChildItem $HOME/.claude/skills/\n"
-    "    Get-Content $HOME/.claude/settings.json\n"
-    "    Przetestuj /state-start — powinien zapisać stan sesji.\n"
-    "\n"
-    "Na końcu powiedz jak stworzyć pierwszy projekt (/setup-new-project)\n"
-    "i wytłumacz kiedy używać /state-start i /catchup.\n"
-    "\n"
-    "Pełny opis kroków: setup/onboarding-prompt.md"
-)
 
 
 # ── Generowanie dokumentu ─────────────────────────────────────────────────────
@@ -1387,32 +1349,16 @@ def generate():
     add_section_heading(doc, 'Część 2 — Tekst do wklejenia do Claude')
 
     instruction = doc.add_paragraph(
-        'Znajdź swój system poniżej. Zaznacz CAŁY tekst w niebieskiej ramce, '
+        'Zaznacz CAŁY tekst w niebieskiej ramce poniżej, '
         'skopiuj (Cmd+C na Macu / Ctrl+C na Windowsie) '
         'i wklej do czarnego okienka w Windsurf gdzie działa Claude '
         '(Cmd+V na Macu / Ctrl+V na Windowsie). '
-        'Naciśnij Enter. Claude zacznie rozmawiać z Tobą i przeprowadzi Cię przez całą resztę.'
+        'Naciśnij Enter. Claude wykryje Twój system i przeprowadzi Cię przez całą resztę.'
     )
     for r in instruction.runs:
         set_font(r, size=10)
 
-    # Naglowek macOS
-    mac_heading = doc.add_paragraph()
-    mac_heading.paragraph_format.space_before = Pt(10)
-    mac_heading.paragraph_format.space_after = Pt(4)
-    r = mac_heading.add_run('Jeśli masz Maca — skopiuj to:')
-    set_font(r, bold=True, size=11, color=(60, 60, 60))
-
     add_prompt_block(doc, HANDOFF_PROMPT)
-
-    # Naglowek Windows
-    win_heading = doc.add_paragraph()
-    win_heading.paragraph_format.space_before = Pt(12)
-    win_heading.paragraph_format.space_after = Pt(4)
-    r = win_heading.add_run('Jeśli masz Windowsa — skopiuj to:')
-    set_font(r, bold=True, size=11, color=(0, 84, 166))
-
-    add_prompt_block(doc, WIN_HANDOFF_PROMPT)
 
     note = doc.add_paragraph(
         'Szczegółowy opis każdego kroku konfiguracji: setup/onboarding-prompt.md'
