@@ -1262,7 +1262,7 @@ CZĘŚĆ B — Konfiguracja Claude
          "hooks":[{"type":"command",
            "command":"python3 $h/.claude/hooks/security-scan.py"}]}]} }"@ |
      Set-Content "$HOME\.claude\settings.json"
-   Sprawdź: ścieżki muszą być absolutne np. /Users/... lub C:\Users\...
+   Sprawdź: ścieżki muszą być absolutne np. /Users/... lub C:/Users/...
 
 8. Skonfiguruj CLAUDE.md — zapytaj mnie o:
    język pracy z AI / GitHub username / ścieżka do projektów
