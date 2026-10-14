@@ -20,7 +20,7 @@ Przed uruchomieniem:
 1. Wykrywa nazwę projektu z nazwy folderu (`basename $PWD`)
 2. Aktualizuje `CLAUDE.md` — zamienia wszystkie `PROJECT_NAME` na rzeczywistą nazwę
 3. Inicjalizuje git (`git init`) lub czyści remote po duplikowaniu
-4. Tworzy prywatne repo na GitHubie (`gh repo create PablosekRepo/NazwaProjektu --private`)
+4. Tworzy prywatne repo na GitHubie (`gh repo create blaszczykrafal1-a11y/NazwaProjektu --private`)
 5. Instaluje pre-commit hook (`system/scripts/pre-commit.sh` → `.git/hooks/pre-commit`)
 6. Robi initial commit i push do `main`
 7. Inicjalizuje plik memory (`~/.claude/projects/[hash]/memory/MEMORY.md`)

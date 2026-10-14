@@ -449,7 +449,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Repository Info
 
 <!-- Wypełniany automatycznie przez /setup-new-project -->
-- **GitHub**: https://github.com/PablosekRepo/PROJECT_NAME
+- **GitHub**: https://github.com/blaszczykrafal1-a11y/PROJECT_NAME
 - **Branch**: main
 - **Visibility**: private
 
@@ -528,7 +528,7 @@ Po zduplikowaniu Template i otwarciu projektu w Windsurf:
 ```
 Skill automatycznie:
 - Wykrywa nazwę projektu z folderu
-- Tworzy repo na GitHubie (PablosekRepo, private)
+- Tworzy repo na GitHubie (blaszczykrafal1-a11y, private)
 - **Instaluje pre-commit hook** (`system/scripts/pre-commit.sh` → `.git/hooks/pre-commit`)
 - Robi initial commit i push
 
