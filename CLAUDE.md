@@ -1,4 +1,4 @@
-# CLAUDE.md - PROJECT_NAME
+# CLAUDE.md - Test-modelu
 
 ## Project Overview
 
@@ -8,7 +8,7 @@
 ## Project Structure
 
 ```
-PROJECT_NAME/
+Test-modelu/
 ├── CLAUDE.md                          # Ten plik - instrukcje dla Claude
 ├── .claude/
 │   ├── session-state.md               # Stan sesji (aktualizuj przed /clear)
@@ -449,7 +449,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Repository Info
 
 <!-- Wypełniany automatycznie przez /setup-new-project -->
-- **GitHub**: https://github.com/blaszczykrafal1-a11y/PROJECT_NAME
+- **GitHub**: https://github.com/blaszczykrafal1-a11y/Test-modelu
 - **Branch**: main
 - **Visibility**: private
 
@@ -488,7 +488,7 @@ Claude Code automatycznie tworzy folder pamięci per-projekt pod `~/.claude/proj
 **Przy pierwszym uruchomieniu projektu** — jeśli `MEMORY.md` w tym folderze nie istnieje lub jest pusty, utwórz go z następującą strukturą:
 
 ```markdown
-# MEMORY - PROJECT_NAME
+# MEMORY - Test-modelu
 
 ## Architektura i kluczowe pliki
 —
