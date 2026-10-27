@@ -12,10 +12,11 @@ import math
 import os
 import sys
 from collections import Counter, defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import (OUT, Dataset, Report, compute_cac, dt, load_events, pct, year_of, zl, zl2)
+from common import (DATA_END, L4_CODES, OUT, WINDOWS, Dataset, Report, compute_cac, dt, enrich_patients, km_at,
+                    load_events, pct, session_funnel, survival, zl, zl2)
 
 sys.stdout.reconfigure(encoding="utf-8")
 R = Report()
@@ -26,19 +27,11 @@ compute_cac(ds)
 EV = load_events()
 orders, patients, sessions = ds.orders, ds.patients, ds.sessions
 
-DATA_START, DATA_END = date(2024, 10, 1), date(2026, 9, 30)
-END_DT = datetime(2026, 10, 1)
+DATA_START = date(2024, 10, 1)
 DAYS = [DATA_START + timedelta(days=i) for i in range((DATA_END - DATA_START).days + 1)]
-WINDOWS = (7, 14, 30, 60, 90, 180, 365)
 RR_FROM = date(2026, 4, 1)  # run-rate: ostatnie 6 miesiecy x 2 (A20)
-IN_APP = {"Instagram", "Facebook", "TikTok"}
-L4_CODES = {"L4SZYBKO20", "TIKTOK25"}
 STEP_NAMES = ["S1 wybor uslugi / sesja", "S2 termin / usluga", "S3 konto / termin", "S4 start platnosci / konto",
               "S5 platnosc OK / start platnosci", "S6 zamowienie / platnosc OK"]
-
-
-def bgroup(b):
-    return "in_app" if b in IN_APP else ("chrome/safari" if b in ("Chrome", "Safari") else "inne")
 
 
 def f2(x):
@@ -49,36 +42,7 @@ def f2(x):
 # 1. KOHORTY
 # ===========================================================================
 print("1. Kohorty...")
-go_by_user = defaultdict(list)
-for g in ds.go:
-    go_by_user[g["uid"]].append(g)
-
-
-def code_group(c):
-    if c in L4_CODES:
-        return "kod L4"
-    return {"brak": "brak kodu", "GO": "rabat GO"}.get(c, "inne kody")
-
-
-for p in patients.values():
-    f, os_ = p["first_t"], p["orders"]
-    gs = go_by_user.get(p["uid"], [])
-    first = os_[0]
-    p["code_group"] = code_group(p["first_code"])
-    p["go_path"] = ("GO przy 1. zam." if any(g["oid"] == first["oid"] for g in gs)
-                    else ("GO kupione pozniej" if gs else "bez GO"))
-    p["first_cat"] = "specjalista" if first["spec"] != "internista" else f"internista: {first['purpose']}"
-    p["ret_days"] = [(o["t"] - f).total_seconds() / 86400 for o in os_[1:]]
-    p["win"] = {}
-    for k in WINDOWS:
-        if f.date() + timedelta(days=k) > DATA_END:
-            continue
-        lim = f + timedelta(days=k)
-        fees = sum(g["fee"] for g in gs if g["t"] <= lim)
-        net = sum(o["net"] for o in os_ if o["t"] <= lim) + fees
-        cm1 = sum(o["cm1"] for o in os_ if o["t"] <= lim) + fees
-        ret = any(d <= k for d in p["ret_days"])
-        p["win"][k] = (ret, net, cm1, cm1 - p["cac_ft"])
+go_by_user = enrich_patients(ds)
 
 R.h("1. Kohorty i krzywe retencji / LTV")
 R.p("Kohorta = dzien 1. oplaconego zamowienia (czas PL). Retencja D+k = co najmniej jedno kolejne zamowienie w ciagu k dni. "
@@ -152,54 +116,17 @@ M["weekly_d30"] = {w: {"n": len(ps), "ret30": (sum(p["win"][30][0] for p in ps i
 
 # --- krzywa przezycia ---------------------------------------------------------
 R.h("Krzywa przezycia: czas do 2. zamowienia (Kaplan-Meier) i kiedy pacjent 'umiera'", 3)
-obs = []
-for p in patients.values():
-    if p["ret_days"]:
-        obs.append((p["ret_days"][0], 1))
-    else:
-        obs.append(((END_DT - p["first_t"]).total_seconds() / 86400, 0))
-obs.sort()
-S, at_risk, i, km = 1.0, len(obs), 0, []
-while i < len(obs):
-    t = obs[i][0]
-    d = c = 0
-    while i < len(obs) and obs[i][0] == t:
-        d += obs[i][1]
-        c += 1
-        i += 1
-    if d:
-        S *= 1 - d / at_risk
-    km.append((t, S))
-    at_risk -= c
-
-
-def km_at(day):
-    s = 1.0
-    for t, v in km:
-        if t > day:
-            break
-        s = v
-    return s
-
-
+km, gaps = survival(ds)
 checkpoints = (1, 7, 14, 30, 60, 90, 120, 180, 270, 365, 540)
 R.table(["dzien"] + [f"D+{d}" for d in checkpoints],
-        [["% pacjentow z 2. zamowieniem (KM)"] + [f"{100 * (1 - km_at(d)):.1f}%" for d in checkpoints]])
-km_vals = {d: 1 - km_at(d) for d in checkpoints}
+        [["% pacjentow z 2. zamowieniem (KM)"] + [f"{100 * (1 - km_at(km, d)):.1f}%" for d in checkpoints]])
+km_vals = {d: 1 - km_at(km, d) for d in checkpoints}
 inc = [(checkpoints[j], km_vals[checkpoints[j]] - (km_vals[checkpoints[j - 1]] if j else 0)) for j in range(len(checkpoints))]
 R.p("Przyrost udzialu powracajacych w przedzialach: " + ", ".join(
     f"do D+{d}: +{100 * v:.1f} pp" for d, v in inc))
 M["km"] = km_vals
 
 # warunkowe prawdopodobienstwo powrotu po d dniach bezczynnosci
-gaps = []
-for p in patients.values():
-    os_ = p["orders"]
-    for j, o in enumerate(os_):
-        if o["t"] + timedelta(days=365) > END_DT:
-            continue
-        nxt = (os_[j + 1]["t"] - o["t"]).total_seconds() / 86400 if j + 1 < len(os_) else math.inf
-        gaps.append(nxt)
 rows, death = [], None
 for d in (0, 7, 14, 30, 60, 90, 120, 180, 270):
     alive = [g for g in gaps if g > d]
@@ -238,27 +165,7 @@ M["r1_explain"] = {"n": len(r1), "any_return": any_ret, "bought_in_r2": in_r2, "
 # ===========================================================================
 print("2. Lejek...")
 order_sids = {o["sid"]: o for o in orders}
-prod_sessions = [s for s in sessions.values() if not ds.is_test_session(s)]
-inconsist = Counter()
-for s in prod_sessions:
-    ev = EV.get(s["sid"], {})
-    logged_entry = bool(s["user"]) and "account_completed" not in ev
-    s1 = "service_selected" in ev
-    s2 = s1 and "slot_selected" in ev
-    s3 = s2 and ("account_completed" in ev or logged_entry)
-    s4 = s3 and "payment_started" in ev
-    s5 = s4 and "payment_succeeded" in ev
-    od = s["sid"] in order_sids
-    s["f"] = (s1, s2, s3, s4, s5, od and s5)
-    s["logged_entry"] = logged_entry
-    s["bg"] = bgroup(s["browser"])
-    s["year"] = year_of(s["t"])
-    if od and not s5:
-        inconsist["zamowienie bez pelnej sciezki S1-S5"] += 1
-    if s5 and not od:
-        inconsist["S5 bez zamowienia (np. GO z usluga)"] += 1
-    if "payment_started" in ev and not s1:
-        inconsist["platnosc bez wyboru uslugi (GO osobno)"] += 1
+prod_sessions, inconsist = session_funnel(ds, EV)
 
 
 def fun_agg(key_fn, filt=lambda s: True):

@@ -418,3 +418,40 @@ Nakładanie: a2 i d1 (te same zamówienia L4SZYBKO20); a3 wymaga a1. Bez a3 i c1
 3. **Kampanie L4 uruchomiły kaskadę:** ruch in-app → L4 → zwroty → przeciążenie lekarzy (opóźnienia ×2.7) → kohorty z niską zgodą marketingową (33-44%) → retencja D+30 −35%. To jeden mechanizm, nie kilka problemów.
 4. **Największe pewne dźwignie** (a1 + b1 + d2 + b2 ≈ 155 tys. zł/rok) nie wymagają developmentu. Dźwignie lejkowe (c1/c2) są małe i niepewne.
 5. **Ryzyko operacyjne do eskalacji:** opóźnienie wizyt internisty 11 min średnio / 32 min p90 to wąskie gardło po stronie podaży lekarzy.
+
+---
+
+## KROK 4 - Interaktywny dashboard `index.html` (2026-10-27)
+
+**Skrypty:** `docs/output/scripts/04_build_dashboard.py` (agregacja + wstawienie JSON do szablonu), `docs/output/scripts/dashboard_template.html` (HTML/CSS/JS), `docs/output/scripts/04_smoke_test.py` (weryfikacja)
+**Wyjście:** `index.html` (root repo) + kopia `docs/output/index.html` - **1,60 MiB** (1 682 370 B; dane JSON 1,53 MiB), jedyna zależność zewnętrzna: Chart.js 4.4.1 z cdnjs.
+
+### 4.1 Decyzje architektoniczne
+
+| decyzja | uzasadnienie |
+|---|---|
+| Dashboard czyta liczby z metryk JSON kroków 1-3 + liczy na Clean Production tylko to, czego wymaga interakcja (kohorty dzienne × 20 segmentów × 7 okien, kostka lejka miesiąc × urządzenie × przeglądarka × kanał, dzienne szeregi osi czasu, kaskada per kanał FT/LT). | Jedno źródło prawdy: te same liczby co w raportach. Logikę kohort, lejka i przeżycia przeniesiono do `common.py` (`enrich_patients`, `session_funnel`, `survival`); raport kroku 3 po refaktorze sprawdzony: identyczny. |
+| Kaskada per kanał uzgodniona z krokiem 2: suma CM2 po kanałach = 832 560 zł (R1) i 1 053 369 zł (R2), co do złotówki. | Kontrola wbudowana w build. |
+| **Przełącznik FT/LT działa na poziomie kanału, nie sumy.** | Suma kaskady nie zależy od atrybucji (wydatki są te same); FT vs LT zmienia przypisanie pacjentów, ich zamówień i CAC do kanałów. Dashboard mówi to wprost. |
+| Agregacja tydzień/miesiąc liczona w przeglądarce z kohort dziennych; komórka z niedomkniętym oknem dla części dni oznaczona `*`. | Brak duplikacji danych; uczciwe okna. |
+| Bez Tailwinda i bez frameworków; własny CSS z tokenami palety (dataviz: walidator PASS w obu trybach; 3 kolory light < 3:1 → legendy + tabelaryczne odpowiedniki każdego wykresu). | Rozmiar, szybkość, brak runtime CSS. Tryb ciemny jako osobne wartości tokenów; motyw: auto / jasny / ciemny, także `?theme=dark`. |
+| Zdarzenia na osi czasu są kuratorowane (24 pozycje z KROKU 3, po weryfikacji trend/miks vs zdarzenie), a nie surowe 120 punktów zmiany. | Surowe CP zawierają trendy i sezonowość; na dashboard trafia tylko to, co przeszło weryfikację. |
+| GitHub Pages **nie zostało włączone** przez Claude. | Repo jest prywatne; Pages dla prywatnego repo wymaga płatnego planu, a strona i tak byłaby publiczna. To decyzja o publikacji, należy do usera. |
+
+### 4.2 Korekty briefu
+
+- Ceny w teście cenowym: pediatra **95 zł**, psycholog **99 zł** (brief: 99/109).
+- Krok lejka „odbyta wizyta” = zamówienie ze statusem `completed` lub `refunded` (wizyta się odbyła; README).
+
+### 4.3 Weryfikacja (`04_smoke_test.py`)
+
+- `node --check` skryptu aplikacji: OK; JSON danych parsuje się.
+- Edge headless: **140 interakcji** (wszystkie zakładki, każda opcja każdego selecta, przełączniki, wiersze zdarzeń, sortowanie i rozwijanie planu, wyszukiwarka założeń, oba motywy): **0 nieudanych, 0 błędów JS, 0 wystąpień „NaN/undefined/Infinity” w treści.**
+- Zrzuty ekranu 5 zakładek (jasny) + zakładka 3 (ciemny) obejrzane: brak kolizji etykiet i przepełnień.
+
+### 4.4 Założenia kroku 4
+
+| # | założenie | uzasadnienie / ryzyko |
+|---|---|---|
+| A23 | Dzienny CM2 na osi czasu = CM1 zamówień dnia + opłaty GO dnia − spend CPC dnia − prowizje afiliacyjne (wg dnia 1. zamówienia). | Miesięczna kaskada (krok 2) alokuje spend po miesiącu; dzienny szereg jest bardziej zaszumiony, dlatego domyślnie wygładzenie 7 dni. |
+| A24 | Kostka lejka pomija sesje kont testowych; „Zamówienie” = sesja z S5 i zamówieniem konsultacji (CR zgodny z krokiem 3). | Spójność z dekompozycją CR. |

@@ -1,6 +1,6 @@
 # 03 - Kohorty, lejek, zdarzenia, wycena (scripts/03_cohorts_and_funnels.py)
 
-Wygenerowano: 2026-10-27 14:49
+Wygenerowano: 2026-10-27 15:04
 
 ## 1. Kohorty i krzywe retencji / LTV
 

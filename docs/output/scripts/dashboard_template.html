@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audyt wzrostu Telemedi B2C</title>
+<meta name="description" content="Audyt wzrostu sprzedaży online konsultacji 2024-10 – 2026-09: unit economics, kohorty, lejek, oś zdarzeń, plan działań.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --card: #ffffff;
+  --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10); --neutral: #f0efec;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --good: #0ca30c; --good-text: #006300; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --hl: rgba(42,120,214,0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --card: #1a1a19;
+    --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --neutral: #383835;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --good-text: #0ca30c; --hl: rgba(57,135,229,0.14);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --card: #1a1a19;
+  --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --neutral: #383835;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --good-text: #0ca30c; --hl: rgba(57,135,229,0.14);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 20px 16px 0; max-width: 1440px; margin: 0 auto; display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+header h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
+header p { margin: 0; color: var(--ink2); font-size: 13px; max-width: 900px; }
+.btn { font: inherit; font-size: 13px; border: 1px solid var(--border); background: var(--card); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.btn:hover { background: var(--hl); }
+nav { position: sticky; top: 0; z-index: 20; background: var(--page); border-bottom: 1px solid var(--grid); }
+nav .inner { max-width: 1440px; margin: 0 auto; padding: 8px 16px 0; display: flex; gap: 4px; overflow-x: auto; }
+nav button { font: inherit; font-size: 13.5px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--ink2); padding: 8px 12px 10px; cursor: pointer; white-space: nowrap; }
+nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--s1); font-weight: 600; }
+main { max-width: 1440px; margin: 0 auto; padding: 16px; }
+section[role="tabpanel"] { display: none; }
+section[role="tabpanel"].active { display: block; }
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 4px; font-weight: 650; display: flex; align-items: center; gap: 6px; }
+.card h3 { font-size: 13.5px; margin: 14px 0 6px; font-weight: 600; }
+.card .lead { margin: 0 0 12px; color: var(--ink2); font-size: 13px; }
+.stack > * + * { margin-top: 16px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; }
+.controls label { font-size: 12px; color: var(--ink2); display: flex; flex-direction: column; gap: 3px; }
+select, input[type="search"] { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); min-width: 120px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 12.5px; border: 0; background: var(--surface); color: var(--ink2); padding: 5px 10px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--s1); color: #fff; }
+.chart { position: relative; height: 320px; }
+.chart.tall { height: 420px; }
+.chart.short { height: 240px; }
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+.kpi { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--surface); }
+.kpi .l { font-size: 12px; color: var(--ink2); display: flex; gap: 4px; align-items: center; }
+.kpi .v { font-size: 26px; font-weight: 650; margin: 2px 0; }
+.kpi .s { font-size: 12px; color: var(--ink2); }
+.panel-title { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+.bad { color: var(--critical); }
+.good { color: var(--good-text); }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--ink2); white-space: nowrap; }
+.chip.c-bad::before { content: "▼"; color: var(--critical); font-size: 9px; }
+.chip.c-good::before { content: "▲"; color: var(--good); font-size: 9px; }
+.chip.c-warn::before { content: "●"; color: var(--warning); font-size: 9px; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: right; vertical-align: top; }
+th { color: var(--ink2); font-weight: 600; position: sticky; top: 0; background: var(--card); z-index: 1; }
+th:first-child, td:first-child { text-align: left; }
+td.l, th.l { text-align: left; }
+#evTable th, #hAssum th, #hRules th, #hTz th:last-child { text-align: left; }
+tbody tr:hover { background: var(--hl); }
+.num { font-variant-numeric: tabular-nums; }
+.tbl { overflow: auto; max-height: 520px; border: 1px solid var(--grid); border-radius: 8px; }
+.tbl.free { max-height: none; }
+tr.key td:first-child { font-weight: 650; }
+details > summary { cursor: pointer; color: var(--ink2); font-size: 12.5px; margin-top: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink2); margin: 6px 0 0; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.info { display: inline-flex; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--axis); color: var(--muted); font-size: 10.5px; font-style: normal; align-items: center; justify-content: center; cursor: help; flex: none; }
+#tip { position: fixed; z-index: 100; pointer-events: none; max-width: 340px; background: var(--card); color: var(--ink); border: 1px solid var(--border); box-shadow: 0 4px 18px rgba(0,0,0,.14); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; display: none; }
+#tip b { display: block; margin-bottom: 2px; }
+.heat td { padding: 3px 6px; font-size: 11.5px; border-bottom: 1px solid var(--surface); border-right: 2px solid var(--surface); }
+.heat td.c { text-align: center; }
+.heat td.partial { font-style: italic; }
+.scale { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink2); margin-top: 6px; }
+.scale .bar { height: 10px; width: 180px; border-radius: 3px; }
+.note { font-size: 12.5px; color: var(--ink2); background: var(--surface); border: 1px solid var(--grid); border-left: 3px solid var(--s1); border-radius: 6px; padding: 8px 10px; }
+.note.warn { border-left-color: var(--warning); }
+.unk { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
+.unk h3 { margin: 0 0 8px; font-size: 14px; }
+.unk dl { margin: 0; display: grid; grid-template-columns: 120px 1fr; gap: 6px 10px; font-size: 12.5px; }
+.unk dt { color: var(--muted); font-weight: 600; }
+.unk dd { margin: 0; }
+.expand { cursor: pointer; }
+tr.detail td { background: var(--surface); text-align: left; font-size: 12.5px; color: var(--ink2); }
+tr.detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px 16px; padding: 4px 0; }
+th.sortable { cursor: pointer; }
+th.sortable::after { content: " ↕"; color: var(--muted); font-weight: 400; }
+code { font-size: 12px; background: var(--neutral); padding: 0 4px; border-radius: 4px; }
+footer { max-width: 1440px; margin: 0 auto; padding: 8px 16px 32px; font-size: 12px; color: var(--muted); }
+@media (max-width: 640px) { .kpi .v { font-size: 22px; } .unk dl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Audyt wzrostu Telemedi B2C · 2024-10 – 2026-09</h1>
+    <p>Czy oficjalne „+52% pacjentów” to zdrowy wzrost? Dataset <b>Clean Production</b>: bez duplikatów ETL i kont TEST-QA, czas Europe/Warsaw, identity stitching visitor→pacjent. Dane z zadania rekrutacyjnego (fikcyjne, wygenerowane).</p>
+  </div>
+  <button class="btn" id="themeBtn" type="button" aria-label="Przełącz motyw">Motyw: auto</button>
+</header>
+<nav><div class="inner" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="t1">1 · Prawda o wzroście</button>
+  <button role="tab" aria-selected="false" data-tab="t2">2 · Kohorty i oś zdarzeń</button>
+  <button role="tab" aria-selected="false" data-tab="t3">3 · Lejek i operacje</button>
+  <button role="tab" aria-selected="false" data-tab="t4">4 · Plan działań</button>
+  <button role="tab" aria-selected="false" data-tab="t5">5 · Known unknowns i higiena danych</button>
+</div></nav>
+<main>
+
+<!-- ===================== TAB 1 ===================== -->
+<section role="tabpanel" id="t1" class="active stack">
+  <div class="grid g2">
+    <div class="card">
+      <p class="panel-title">Oficjalny dashboard (R2 vs R1)</p>
+      <div class="kpis" id="kpiOfficial"></div>
+    </div>
+    <div class="card">
+      <p class="panel-title">Rzeczywistość ekonomiczna (Clean Production)</p>
+      <div class="kpis" id="kpiReal"></div>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h2>Kaskada marży <i class="info" data-tip="Gross → rabaty → zwroty → Net → koszt lekarza (completed + refunded, wg README) = CM1 → marketing (CPC + afiliacja) = CM2. Opłaty GO (89 zł) dodane do Net Revenue.">?</i></h2>
+      <p class="lead">Rok 1 = 2024-10…2025-09, Rok 2 = 2025-10…2026-09. Kanał = kanał pozyskania pacjenta; jego zamówienia i przypisany CAC.</p>
+      <div class="controls">
+        <div class="seg" id="wfYear"><button aria-pressed="false" data-v="Y1">Rok 1</button><button aria-pressed="true" data-v="Y2">Rok 2</button></div>
+        <div class="seg" id="wfModel"><button aria-pressed="true" data-v="ft">First-Touch (stitched)</button><button aria-pressed="false" data-v="lt">Last-Touch</button></div>
+        <label>Kanał pozyskania<select id="wfChannel"></select></label>
+      </div>
+      <div class="chart tall"><canvas id="cWaterfall" aria-label="Kaskada marży"></canvas></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>suma pośrednia</span><span><i style="background:var(--s8)"></i>pomniejszenie</span><span><i style="background:var(--s3)"></i>dodatek (opłaty GO)</span></div>
+      <div id="wfNote" class="note" style="margin-top:10px"></div>
+      <details open><summary>Tabela: R1 vs R2</summary><div class="tbl free" id="wfTable"></div></details>
+    </div>
+    <div class="card">
+      <h2>Miesiąc po miesiącu</h2>
+      <p class="lead">Erozja marży jednostkowej przyspiesza od lutego 2026 (start TikTok L4, skalowanie Meta L4).</p>
+      <div class="controls"><label>Metryka<select id="mMetric"></select></label></div>
+      <div class="chart tall"><canvas id="cMonthly" aria-label="Metryka miesięczna"></canvas></div>
+      <details><summary>Tabela miesięczna</summary><div class="tbl" id="mTable"></div></details>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Rentowność: kanały, kampanie, kody, specjalizacje <i class="info" data-tip="CAC = koszt puli (kampania × miesiąc kohorty) / nowi pacjenci przypisani do puli. CM1/CM2 D+180 i D+365 tylko dla kohort z pełnym oknem obserwacji. Masa CM2 = cały obserwowany okres.">?</i></h2>
+    <p class="lead">Na czerwono to, co nie zarabia. Przełącznik atrybucji zmienia przypisanie pacjentów i CAC do kanałów i kampanii.</p>
+    <div class="controls">
+      <div class="seg" id="pView">
+        <button aria-pressed="true" data-v="channel">Kanały</button><button aria-pressed="false" data-v="campaign">Kampanie</button>
+        <button aria-pressed="false" data-v="code">Kody (pacjent)</button><button aria-pressed="false" data-v="orders">Kody (zamówienia)</button>
+        <button aria-pressed="false" data-v="specs">Specjalizacje</button>
+      </div>
+      <div class="seg" id="pModel"><button aria-pressed="true" data-v="ft">First-Touch</button><button aria-pressed="false" data-v="lt">Last-Touch</button></div>
+      <label>Metryka wykresu<select id="pMetric"></select></label>
+    </div>
+    <div class="grid g2">
+      <div class="chart tall"><canvas id="cProfit" aria-label="Rentowność"></canvas></div>
+      <div class="tbl" id="pTable"></div>
+    </div>
+    <div class="legend" id="pLegend"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB 2 ===================== -->
+<section role="tabpanel" id="t2" class="stack">
+  <div class="card">
+    <h2>Eksplorator kohort <i class="info" data-tip="Kohorta = dzień pierwszego opłaconego zamówienia. Retencja D+k = co najmniej jedno kolejne zamówienie w ciągu k dni. Wartości skumulowane na pacjenta, z 1. zamówieniem i opłatami GO; CM2 = CM1 − CAC (FT). Kursywa i * = okno domknięte tylko dla części dni w wierszu.">?</i></h2>
+    <p class="lead">Mapa ciepła w rozdzielczości dziennej, tygodniowej lub miesięcznej. Puste komórki = okno jeszcze się nie domknęło (koniec danych 2026-09-30).</p>
+    <div class="controls">
+      <div class="seg" id="cAgg"><button aria-pressed="false" data-v="day">Dzień</button><button aria-pressed="false" data-v="week">Tydzień</button><button aria-pressed="true" data-v="month">Miesiąc</button></div>
+      <label>Przekrój<select id="cDim"></select></label>
+      <label>Segment<select id="cSeg"></select></label>
+      <label>Metryka<select id="cMetric">
+        <option value="0">Retencja (%)</option><option value="1">Skumulowane Net Revenue / pacjent</option>
+        <option value="2">Skumulowane CM1 / pacjent</option><option value="3" selected>Skumulowane CM2 / pacjent (LTV − CAC)</option>
+      </select></label>
+    </div>
+    <div class="grid g2">
+      <div>
+        <div class="tbl" id="heat"></div>
+        <div class="scale" id="heatScale"></div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Krzywa w przekroju (wszystkie kohorty z pełnym oknem)</h3>
+        <div class="chart"><canvas id="cCurve" aria-label="Krzywa kohort"></canvas></div>
+        <div class="legend" id="curveLegend"></div>
+        <details><summary>Tabela krzywych</summary><div class="tbl free" id="curveTable"></div></details>
+      </div>
+    </div>
+  </div>
+  <div class="grid g3">
+    <div class="card">
+      <h2>Krzywa przeżycia: 2. zamówienie</h2>
+      <p class="lead" id="kmLead"></p>
+      <div class="chart"><canvas id="cKM" aria-label="Kaplan-Meier"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Kiedy pacjent „umiera”</h2>
+      <p class="lead" id="condLead"></p>
+      <div class="chart"><canvas id="cCond" aria-label="Prawdopodobieństwo powrotu"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Artefakt „11% retencji R1→R2”</h2>
+      <p class="lead" id="r1Lead"></p>
+      <div class="chart"><canvas id="cR1" aria-label="Kohorty R1"></canvas></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>wrócił kiedykolwiek</span><span><i style="background:var(--s2)"></i>kupił w R2</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Oś czasu zdarzeń (change-points) <i class="info" data-tip="Zdarzenia wykryte binary segmentation (|t| ≥ 7, zmiana ≥ 10%) i zweryfikowane ręcznie (trend/miks vs zdarzenie). Najedź na pionową linię, żeby zobaczyć opis; kliknij wiersz tabeli, żeby podświetlić.">?</i></h2>
+    <p class="lead">Dzienna metryka z naniesionymi datami ukrytych zdarzeń marketingowych, produktowych i operacyjnych.</p>
+    <div class="controls">
+      <label>Metryka<select id="tMetric"></select></label>
+      <div class="seg" id="tSmooth"><button aria-pressed="false" data-v="1">Dzień</button><button aria-pressed="true" data-v="7">7 dni</button><button aria-pressed="false" data-v="28">28 dni</button></div>
+      <div id="tKinds" class="legend" style="margin:0"></div>
+    </div>
+    <div class="chart tall"><canvas id="cTimeline" aria-label="Oś czasu"></canvas></div>
+    <div class="tbl" id="evTable" style="margin-top:12px;max-height:340px"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB 3 ===================== -->
+<section role="tabpanel" id="t3" class="stack">
+  <div class="card">
+    <h2>Lejek konwersji <i class="info" data-tip="S1 wybór usługi; S2 wybór terminu; S3 konto (account_completed albo zalogowany od wejścia); S4 start płatności; S5 płatność OK; zamówienie konsultacji; odbyta wizyta (completed + refunded). Szare słupki = cały ruch w tym samym okresie.">?</i></h2>
+    <div class="controls">
+      <label>Rok<select id="fYear"><option value="">Wszystkie</option><option value="Y1">Rok 1</option><option value="Y2">Rok 2</option></select></label>
+      <label>Miesiąc<select id="fMonth"></select></label>
+      <label>Urządzenie<select id="fDevice"></select></label>
+      <label>Przeglądarka<select id="fBrowser"></select></label>
+      <label>Kanał<select id="fChannel"></select></label>
+    </div>
+    <div class="kpis" id="fKpis" style="margin-bottom:12px"></div>
+    <div class="grid g2">
+      <div>
+        <div class="chart tall"><canvas id="cFunnel" aria-label="Lejek"></canvas></div>
+        <div class="legend"><span><i style="background:var(--s1)"></i>wybrany segment</span><span><i style="background:var(--axis)"></i>cały ruch (ten sam okres)</span></div>
+      </div>
+      <div class="tbl free" id="fTable"></div>
+    </div>
+    <h3>CR miesięcznie: in-app vs Chrome/Safari (filtry urządzenia i kanału)</h3>
+    <div class="chart short"><canvas id="cInapp" aria-label="In-app vs natywne"></canvas></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>Chrome/Safari</span><span><i style="background:var(--s2)"></i>In-app (Instagram, Facebook, TikTok)</span></div>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h2>Spadek CR −2,18 pp: miks, nie lejek (paradoks Simpsona)</h2>
+      <p class="lead" id="dcLead"></p>
+      <div class="controls"><div class="seg" id="dcSeg"><button aria-pressed="false" data-v="channel">Segmenty: kanał</button><button aria-pressed="true" data-v="full">Kanał × urządzenie × przeglądarka</button></div></div>
+      <div class="chart"><canvas id="cDecomp" aria-label="Dekompozycja CR"></canvas></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>CR roku</span><span><i style="background:var(--s8)"></i>obniża CR</span><span><i style="background:var(--s3)"></i>podnosi CR</span></div>
+    </div>
+    <div class="card">
+      <h2>Odkrycie 1: tarcie na płatnościach z e-mail/SMS</h2>
+      <p class="lead">Sukces płatności (S5) według źródła sesji. Kampanie CRM trafiają do zalogowanych, powracających pacjentów, czyli populacji porównywalnej z direct.</p>
+      <div class="chart"><canvas id="cPay" aria-label="Sukces płatności"></canvas></div>
+      <div class="legend"><span><i style="background:var(--s2)"></i>kampanie CRM</span><span><i style="background:var(--axis)"></i>pozostałe źródła</span></div>
+    </div>
+    <div class="card">
+      <h2>Odkrycie 2: przeciążenie internistów po starcie kampanii L4</h2>
+      <p class="lead">Opóźnienie startu wizyty względem umówionego terminu, wizyty odbyte u internisty. No-show w tym czasie stabilny (2–3%).</p>
+      <div class="chart"><canvas id="cDelay" aria-label="Opóźnienie startu wizyty"></canvas></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>średnia [min]</span><span><i style="background:var(--s2)"></i>p90 [min]</span></div>
+    </div>
+    <div class="card">
+      <h2>Odkrycie 3: erozja bazy CRM</h2>
+      <p class="lead">Odsetek zgód marketingowych przy rejestracji (R2) według kanału rejestracji. Nowi pacjenci z TikToka i Meta są słabo osiągalni dla e-mail/SMS, czyli głównego narzędzia retencji.</p>
+      <div class="chart short"><canvas id="cConsent" aria-label="Zgody marketingowe"></canvas></div>
+      <div class="tbl free" id="consentTable" style="margin-top:8px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TAB 4 ===================== -->
+<section role="tabpanel" id="t4" class="stack">
+  <div class="card">
+    <h2>Plan działań: wycena dźwigni CM2 <i class="info" data-tip="Run-rate: 2026-04…09 × 2. Central = scenariusz bazowy; zakres = scenariusz pesymistyczny…optymistyczny (założenie A21 w DECISION_LOG). Sortowanie domyślne: wartość na dzień wdrożenia.">?</i></h2>
+    <p class="lead">Kliknij nagłówek, żeby sortować; kliknij wiersz, żeby rozwinąć KPI, metrykę obronną i sposób walidacji.</p>
+    <div class="kpis" id="planKpis" style="margin-bottom:14px"></div>
+    <div class="chart tall"><canvas id="cPlan" aria-label="Wycena inicjatyw"></canvas></div>
+    <div class="legend"><span><i style="background:var(--s1)"></i>ΔCM2/rok, scenariusz bazowy</span><span><i style="background:var(--s1);opacity:.28"></i>zakres min–max</span></div>
+    <div class="note warn" style="margin:12px 0">Nakładanie się inicjatyw: <b>a2 i d1</b> dotyczą tych samych zamówień <code>L4SZYBKO20</code> (przy −25% wolumenu d1 maleje o ok. 1/4); <b>a3</b> ma sens tylko po <b>a1</b> (realokuje jego budżet). Suma bez a3 i c1 (niska pewność) jest podana osobno.</div>
+    <div class="tbl free" id="planTable"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB 5 ===================== -->
+<section role="tabpanel" id="t5" class="stack">
+  <div class="card">
+    <h2>Czego nie rozstrzygają dane i jak to domknąć</h2>
+    <p class="lead">Każdy punkt: otwarte pytanie → ryzyko biznesowe → brakujące dane → konkretny test lub weryfikacja.</p>
+    <div class="grid g2" id="unknowns"></div>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <h2>Strefy czasowe: UTC vs Europe/Warsaw</h2>
+      <p class="lead">Test: znacznik transakcji − <code>payment_succeeded</code> (UTC) w tej samej sesji vs oczekiwany offset CET/CEST.</p>
+      <div class="tbl free" id="hTz"></div>
+      <h3>Skala przesunięć po konwersji do czasu PL</h3>
+      <div class="tbl free" id="hNight"></div>
+    </div>
+    <div class="card">
+      <h2>Identity stitching (visitor_id → user_id)</h2>
+      <div class="tbl free" id="hId"></div>
+      <h3>Atrybucja: Last-Touch vs First-Touch ze stitchingiem</h3>
+      <div class="tbl free" id="hAttr"></div>
+    </div>
+    <div class="card">
+      <h2>Duplikaty ETL, konta testowe, Clean Production</h2>
+      <div class="tbl free" id="hClean"></div>
+      <h3>Reguły czyszczenia</h3>
+      <div class="tbl free" id="hRules"></div>
+    </div>
+    <div class="card">
+      <h2>Jawne założenia (DECISION_LOG.md)</h2>
+      <div class="controls"><input type="search" id="aSearch" placeholder="Szukaj w założeniach…" aria-label="Szukaj w założeniach"></div>
+      <div class="tbl" id="hAssum"></div>
+    </div>
+  </div>
+</section>
+</main>
+<footer>Źródło: <code>docs/output/scripts/04_build_dashboard.py</code> na podstawie kroków 01–03 (Python stdlib). Wygenerowano <span id="gen"></span>. Szczegóły i wszystkie liczby: <code>docs/output/DECISION_LOG.md</code>.</footer>
+<div id="tip" role="tooltip"></div>
+
+<script id="data" type="application/json">__DATA_JSON__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const NF = d => new Intl.NumberFormat("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+const F0 = NF(0), F1 = NF(1), F2 = NF(2);
+const n0 = v => v == null || isNaN(v) ? "–" : F0.format(v);
+const zl = v => v == null || isNaN(v) ? "–" : F0.format(v) + " zł";
+const zl2 = v => v == null || isNaN(v) ? "–" : F2.format(v) + " zł";
+const pc = (v, d = 1) => v == null || isNaN(v) ? "–" : NF(d).format(v * 100) + "%";
+const pp = v => (v > 0 ? "+" : "") + F2.format(v * 100) + " pp";
+const yoy = (a, b) => a ? b / a - 1 : null;
+const sg = v => v == null ? "–" : (v > 0 ? "+" : "") + F1.format(v * 100) + "%";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const neg = v => v != null && v < 0 ? ' class="num bad"' : ' class="num"';
+const SLOTS = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
+const LABEL = {
+  google_cpc: "Google CPC", meta: "Meta", seo: "SEO", direct: "Direct", tiktok: "TikTok", affiliate: "Afiliacja",
+  referral: "Polecenia", email: "E-mail", sms: "SMS", all: "Wszystkie kanały",
+  crm_reactivation: "E-mail: reaktywacja", crm_sms_przypomnienie: "SMS: przypomnienie", crm_recepta_przypomnienie: "E-mail: przypomnienie o recepcie",
+};
+const lab = k => LABEL[k] || k;
+const KEY_ROWS = new Set(["tt_prosp_l4_15min", "gs_generic_specjalisci", "meta_prosp_l4_szybko", "L4SZYBKO20", "TIKTOK25", "pediatra", "psycholog", "tiktok"]);
+
+function hexA(hex, a) {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+// ---------- tooltip ----------
+const tip = $("#tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const r = tip.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > innerHeight - 8) top = y - r.height - 14;
+  tip.style.left = Math.max(8, left) + "px"; tip.style.top = Math.max(8, top) + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+document.addEventListener("mouseover", e => {
+  const t = e.target.closest("[data-tip]");
+  if (t) showTip(t.dataset.tip, e.clientX, e.clientY);
+});
+document.addEventListener("mousemove", e => { if (tip.style.display === "block" && e.target.closest("[data-tip]")) showTip(tip.innerHTML, e.clientX, e.clientY); });
+document.addEventListener("mouseout", e => { if (e.target.closest("[data-tip]")) hideTip(); });
+
+// ---------- charts ----------
+const charts = {};
+function mk(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), cfg);
+  return charts[id];
+}
+function merge(a, b) {
+  for (const k in b) {
+    if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k] && typeof a[k] === "object") merge(a[k], b[k]);
+    else a[k] = b[k];
+  }
+  return a;
+}
+function opts(extra = {}) {
+  const base = {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: { backgroundColor: css("--card"), titleColor: css("--ink"), bodyColor: css("--ink2"), borderColor: css("--axis"), borderWidth: 1, padding: 8, boxPadding: 4 },
+    },
+    scales: {
+      x: { grid: { display: false }, border: { color: css("--axis") }, ticks: { color: css("--muted"), maxRotation: 0, autoSkipPadding: 14 } },
+      y: { grid: { color: css("--grid") }, border: { display: false }, ticks: { color: css("--muted") } },
+    },
+  };
+  return merge(base, extra);
+}
+// pionowe znaczniki zdarzen na osi kategorii
+const eventPlugin = {
+  id: "events",
+  afterDatasetsDraw(chart, _a, o) {
+    const list = (o && o.list) || [];
+    if (!list.length) return;
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    ctx.save();
+    chart.$ev = [];
+    list.forEach((e, i) => {
+      const px = x.getPixelForValue(e.idx);
+      if (px < x.left - 1 || px > x.right + 1) return;
+      ctx.strokeStyle = e.color; ctx.globalAlpha = e.hl ? 1 : 0.7; ctx.lineWidth = e.hl ? 2.5 : 1;
+      ctx.beginPath(); ctx.moveTo(px, top + 12); ctx.lineTo(px, bottom); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.fillStyle = e.color;
+      ctx.beginPath(); ctx.arc(px, top + 6, e.hl ? 6 : 5, 0, Math.PI * 2); ctx.fill();
+      if (e.n != null) { ctx.fillStyle = "#fff"; ctx.font = "600 8px system-ui"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.n, px, top + 6.5); }
+      chart.$ev.push({ px, e });
+    });
+    ctx.restore();
+  },
+};
+Chart.register(eventPlugin);
+function bindEventHover(chart) {
+  const cv = chart.canvas;
+  cv.onmousemove = ev => {
+    const r = cv.getBoundingClientRect();
+    const x = ev.clientX - r.left;
+    const hit = (chart.$ev || []).find(h => Math.abs(h.px - x) <= 5);
+    if (hit) showTip(`<b>${esc(hit.e.date)} · ${esc(hit.e.title)}</b>${esc(hit.e.desc || "")}`, ev.clientX, ev.clientY);
+    else hideTip();
+  };
+  cv.onmouseleave = hideTip;
+}
+function applyChartTheme() {
+  Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = css("--ink2");
+  Chart.defaults.borderColor = css("--grid");
+}
+
+// ---------- helpers UI ----------
+function segGroup(id, onChange) {
+  const el = document.getElementById(id);
+  el.onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("button", el).forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    onChange(b.dataset.v);
+  };
+  return () => $("button[aria-pressed=true]", el).dataset.v;
+}
+function fillSelect(sel, items, value) {
+  sel.innerHTML = items.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+  if (value != null) sel.value = value;
+}
+function tableHTML(head, rows, cls = "") {
+  return `<table class="${cls}"><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+}
+function kpi(label, value, sub, tipText) {
+  return `<div class="kpi"><div class="l">${label}${tipText ? ` <i class="info" data-tip="${esc(tipText)}">?</i>` : ""}</div><div class="v">${value}</div><div class="s">${sub}</div></div>`;
+}
+const addDays = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const DAYS = D.cohorts.all.n.map((_, i) => addDays(D.start, i));
+const dayIdx = iso => Math.round((Date.parse(iso + "T00:00:00Z") - Date.parse(D.start + "T00:00:00Z")) / 864e5);
+
+// =====================================================================
+// TAB 1
+// =====================================================================
+function renderT1() {
+  const K = D.kpi;
+  $("#kpiOfficial").innerHTML = [
+    kpi("Nowi płacący pacjenci", sg(yoy(...K.new_patients)), `${n0(K.new_patients[0])} → ${n0(K.new_patients[1])}`, "Definicja dashboardu: user_id przy pierwszym opłaconym zamówieniu. Odtwarza się 1:1 (+51,9%)."),
+    kpi("Gross Revenue", sg(yoy(...K.gross)), `${zl(K.gross[0])} → ${zl(K.gross[1])}`, "Przychód cennikowy konsultacji przed rabatami."),
+    kpi("Zamówienia", sg(yoy(...K.orders)), `${n0(K.orders[0])} → ${n0(K.orders[1])}`, "Clean Production (bez duplikatów ETL i kont testowych)."),
+  ].join("");
+  const last = K.cm2_order_last;
+  $("#kpiReal").innerHTML = [
+    kpi("Wydatki CPC", `<span class="bad">${sg(yoy(...K.spend))}</span>`, `${zl(K.spend[0])} → ${zl(K.spend[1])} <span class="chip c-bad">szybciej niż przychód</span>`),
+    kpi("Zwroty i anulacje", `<span class="bad">${sg(yoy(...K.refunds))}</span>`, `${zl(K.refunds[0])} → ${zl(K.refunds[1])}`, "Anulacje (pełny zwrot przed wizytą) + zwroty po odbytej wizycie (lekarz opłacony)."),
+    kpi("CM1 (po koszcie lekarza)", sg(yoy(...K.cm1)), `${zl(K.cm1[0])} → ${zl(K.cm1[1])}`),
+    kpi("CM2 (po marketingu)", sg(yoy(...K.cm2)), `${zl(K.cm2[0])} → ${zl(K.cm2[1])} <span class="chip c-bad">o połowę wolniej niż wolumen</span>`),
+    kpi("CM2 / zamówienie", `${zl2(K.cm2_order[1])}`, `R1 ${zl2(K.cm2_order[0])} → R2 ${zl2(K.cm2_order[1])} → IX 2026 <b class="bad">${zl2(last)}</b>`),
+    kpi("CR sesja → zamówienie", pc(K.cr[1]), `R1 ${pc(K.cr[0])} → R2 ${pc(K.cr[1])} (efekt miksu, zakładka 3)`),
+  ].join("");
+
+  // --- kaskada
+  const chans = Object.keys(D.wf_channel.ft).sort((a, b) => (D.wf_channel.ft[b].Y2 || {}).orders - (D.wf_channel.ft[a].Y2 || {}).orders);
+  fillSelect($("#wfChannel"), [["all", "Wszystkie kanały"], ...chans.map(c => [c, lab(c)])], "all");
+  const getYear = segGroup("wfYear", drawWF), getModel = segGroup("wfModel", drawWF);
+  $("#wfChannel").onchange = drawWF;
+  const STEPS = [
+    ["Gross Revenue", "gross", "t"], ["Rabaty promo", "disc_promo", "-"], ["Rabaty GO", "disc_go", "-"], ["Billed", "billed", "t"],
+    ["Anulacje", "ref_cancel", "-"], ["Zwroty po wizycie", "ref_after", "-"], ["Opłaty GO", "go_fees", "+"], ["Net Revenue", "net", "t"],
+    ["Lekarz: odbyte", "doc_completed", "-"], ["Lekarz: zwrócone", "doc_refunded", "-"], ["CM1", "cm1", "t"],
+    ["Marketing i afiliacja", "mkt", "-"], ["CM2", "cm2", "t"],
+  ];
+  function src() {
+    const ch = $("#wfChannel").value, m = getModel();
+    const norm = w => w ? { ...w, mkt: w.marketing != null ? w.marketing : (w.paid_media + w.affiliate) } : null;
+    if (ch === "all") return { Y1: norm(D.wf_year.Y1), Y2: norm(D.wf_year.Y2) };
+    const s = D.wf_channel[m][ch] || {};
+    return { Y1: norm(s.Y1), Y2: norm(s.Y2) };
+  }
+  function drawWF() {
+    const S = src(), y = getYear(), w = S[y];
+    const ch = $("#wfChannel").value;
+    $("#wfNote").innerHTML = ch === "all"
+      ? "Suma kaskady nie zależy od modelu atrybucji (wydatki są te same). Wybierz kanał, żeby zobaczyć, jak FT i LT przypisują pacjentów, ich zamówienia i CAC."
+      : `Kanał <b>${esc(lab(ch))}</b> (${getModel() === "ft" ? "First-Touch ze stitchingiem" : "Last-Touch"}): zamówienia pacjentów pozyskanych tym kanałem w danym roku + CAC kohort tego roku.`;
+    if (!w) { mk("cWaterfall", { type: "bar", data: { labels: [], datasets: [] }, options: opts() }); $("#wfTable").innerHTML = "<p class='lead'>Brak pacjentów w tym roku (kanał startuje w R2).</p>"; return; }
+    let run = 0; const data = [], colors = [];
+    STEPS.forEach(([_, k, t]) => {
+      const v = w[k] || 0;
+      if (t === "t") { data.push([0, v]); run = v; colors.push(css("--s1")); }
+      else if (t === "-") { data.push([run - v, run]); run -= v; colors.push(css("--s8")); }
+      else { data.push([run, run + v]); run += v; colors.push(css("--s3")); }
+    });
+    mk("cWaterfall", {
+      type: "bar",
+      data: { labels: STEPS.map(s => s[0]), datasets: [{ data, backgroundColor: colors, borderRadius: 4, borderSkipped: false, maxBarThickness: 44 }] },
+      options: opts({
+        interaction: { mode: "nearest", intersect: true },
+        plugins: { tooltip: { callbacks: { label: c => { const k = STEPS[c.dataIndex][1]; const v = w[k]; return [`${zl(v)}`, `${zl2(v / w.orders)} / zamówienie`, `${pc(v / w.gross)} Gross`]; } } } },
+        scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } }, y: { ticks: { callback: v => F0.format(v / 1000) + " tys." } } },
+      }),
+    });
+    const rows = STEPS.map(([l, k, t]) => {
+      const a = S.Y1 ? S.Y1[k] : null, b = S.Y2 ? S.Y2[k] : null;
+      return `<tr${t === "t" ? ' class="key"' : ""}><td>${t === "-" ? "− " : t === "+" ? "+ " : "= "}${l}</td><td class="num">${zl(a)}</td><td class="num">${zl(b)}</td><td class="num">${a ? sg(yoy(a, b)) : "–"}</td><td class="num">${S.Y1 ? zl2(a / S.Y1.orders) : "–"}</td><td class="num">${S.Y2 ? zl2(b / S.Y2.orders) : "–"}</td></tr>`;
+    });
+    rows.unshift(`<tr><td>Zamówienia</td><td class="num">${n0(S.Y1 && S.Y1.orders)}</td><td class="num">${n0(S.Y2 && S.Y2.orders)}</td><td class="num">${S.Y1 ? sg(yoy(S.Y1.orders, S.Y2.orders)) : "–"}</td><td></td><td></td></tr>`);
+    $("#wfTable").innerHTML = tableHTML(["pozycja", "Rok 1", "Rok 2", "YoY", "/ zam. R1", "/ zam. R2"], rows);
+  }
+  drawWF();
+
+  // --- miesieczne
+  const MM = [
+    ["cm2o", "CM2 / zamówienie", w => w.cm2 / w.orders, zl2], ["cm1o", "CM1 / zamówienie", w => w.cm1 / w.orders, zl2],
+    ["cm2", "CM2 [zł]", w => w.cm2, zl], ["cm1", "CM1 [zł]", w => w.cm1, zl], ["net", "Net Revenue [zł]", w => w.net, zl],
+    ["mkt", "Marketing (CPC + afiliacja) [zł]", w => w.paid_media + w.affiliate, zl], ["disc", "Rabaty (promo + GO) [zł]", w => w.disc_promo + w.disc_go, zl],
+    ["ref", "Zwroty i anulacje [zł]", w => w.ref_cancel + w.ref_after, zl], ["orders", "Zamówienia", w => w.orders, n0],
+    ["mkto", "Marketing / zamówienie", w => (w.paid_media + w.affiliate) / w.orders, zl2],
+  ];
+  fillSelect($("#mMetric"), MM.map(m => [m[0], m[1]]), "cm2o");
+  const months = Object.keys(D.wf_month);
+  function drawM() {
+    const m = MM.find(x => x[0] === $("#mMetric").value);
+    const vals = months.map(k => m[2](D.wf_month[k]));
+    mk("cMonthly", {
+      type: "bar",
+      data: { labels: months, datasets: [{ label: m[1], data: vals, backgroundColor: vals.map(v => v < 0 ? css("--s8") : css("--s1")), borderRadius: 4, maxBarThickness: 26 }] },
+      options: opts({ plugins: { tooltip: { callbacks: { label: c => `${m[1]}: ${m[3](c.raw)}` } } } }),
+    });
+    $("#mTable").innerHTML = tableHTML(["miesiąc", "zam.", "Net", "CM1", "Marketing", "CM2", "CM2/zam."], months.map(k => {
+      const w = D.wf_month[k];
+      return `<tr><td>${k}</td><td class="num">${n0(w.orders)}</td><td class="num">${zl(w.net)}</td><td class="num">${zl(w.cm1)}</td><td class="num">${zl(w.paid_media + w.affiliate)}</td><td class="num">${zl(w.cm2)}</td><td class="num">${zl2(w.cm2 / w.orders)}</td></tr>`;
+    }));
+  }
+  $("#mMetric").onchange = drawM; drawM();
+
+  // --- rentownosc
+  const PM = [["cm2_180", "CM2 D+180 / pacjent"], ["cm2_first", "CM2 1. zamówienia / pacjent"], ["cm2_365", "CM2 D+365 / pacjent"], ["cac", "CAC"], ["mass", "Masa CM2 (cały okres)"], ["ret_180", "Retencja D+180"]];
+  const getView = segGroup("pView", v => { setMetricOptions(v); drawP(); });
+  const getPM = segGroup("pModel", drawP);
+  function setMetricOptions(v) {
+    if (v === "orders") fillSelect($("#pMetric"), [["cm1o", "CM1 / zamówienie"], ["refr", "% refunded"]], "cm1o");
+    else if (v === "specs") fillSelect($("#pMetric"), [["cm1v", "CM1 / odbyta wizyta: bez rabatu vs GO"]], "cm1v");
+    else fillSelect($("#pMetric"), PM, "cm2_180");
+    $("#pModel").style.visibility = (v === "orders" || v === "specs") ? "hidden" : "visible";
+  }
+  $("#pMetric").onchange = drawP;
+  function drawP() {
+    const v = getView(), metric = $("#pMetric").value;
+    let labels = [], data = [], rows = [], head = [], datasets;
+    const fmtM = metric === "ret_180" || metric === "refr" ? pc : (metric === "mass" ? zl : zl2);
+    if (v === "orders") {
+      const items = Object.entries(D.codes_orders).sort((a, b) => b[1].n - a[1].n);
+      labels = items.map(i => i[0]);
+      data = items.map(([_, a]) => metric === "refr" ? (a.refunded || 0) / a.n : a.cm1 / a.n);
+      head = ["kod", "zam.", "Gross", "Rabat", "Zwroty", "Net", "Lekarz", "CM1", "CM1/zam.", "% refunded"];
+      rows = items.map(([k, a]) => `<tr${KEY_ROWS.has(k) ? ' class="key"' : ""}><td>${esc(k)}</td><td class="num">${n0(a.n)}</td><td class="num">${zl(a.gross)}</td><td class="num">${zl(a.discount)}</td><td class="num">${zl(a.refund)}</td><td class="num">${zl(a.net)}</td><td class="num">${zl(a.doctor)}</td><td class="num">${zl(a.cm1)}</td><td${neg(a.cm1)}>${zl2(a.cm1 / a.n)}</td><td class="num">${pc((a.refunded || 0) / a.n)}</td></tr>`);
+      datasets = [{ data, backgroundColor: data.map(x => x < 0 ? css("--s8") : css("--s1")), borderRadius: 4, maxBarThickness: 22 }];
+      $("#pLegend").innerHTML = "Kody L4 mają dodatnie CM1 na zamówieniu; problemem jest CM2 (CAC) i retencja 4–5% (widok „Kody (pacjent)”).";
+    } else if (v === "specs") {
+      labels = D.specs.map(s => s.spec);
+      head = ["specjalizacja", "cena", "lekarz", "zam. R2", "CM1 bez rabatu", "CM1 z GO", "CM1 z promo", "wizyty GO"];
+      rows = D.specs.map(s => `<tr${KEY_ROWS.has(s.spec) ? ' class="key"' : ""}><td>${s.spec}</td><td class="num">${zl(s.price)}</td><td class="num">${zl(s.doctor)}</td><td class="num">${n0(s.orders_y2)}</td><td${neg(s.cm1_none)}>${zl2(s.cm1_none)}</td><td${neg(s.cm1_go)}>${zl2(s.cm1_go)}</td><td${neg(s.cm1_promo)}>${zl2(s.cm1_promo)}</td><td class="num">${n0(s.n_go)}</td></tr>`);
+      datasets = [
+        { label: "bez rabatu", data: D.specs.map(s => s.cm1_none), backgroundColor: css("--s1"), borderRadius: 4, maxBarThickness: 16 },
+        { label: "z rabatem GO", data: D.specs.map(s => s.cm1_go), backgroundColor: css("--s2"), borderRadius: 4, maxBarThickness: 16 },
+      ];
+      $("#pLegend").innerHTML = `<span><i style="background:var(--s1)"></i>CM1 / wizyta bez rabatu</span><span><i style="background:var(--s2)"></i>CM1 / wizyta z rabatem GO</span><span>Pediatra (95 zł) i psycholog (99 zł) są pod wodą już przy cenie katalogowej (koszt lekarza 100 zł).</span>`;
+    } else {
+      const items = D.profit[getPM()][v].filter(r => r.n >= 100);
+      labels = items.map(r => lab(r.name));
+      data = items.map(r => r[metric]);
+      head = ["", "pacjenci", "CAC", "CM1 1. zam.", "CM2 1. zam.", "CM1 D+180", "CM2 D+180", "ret D+180", "CM2 D+365", "masa CM2"];
+      rows = items.map(r => `<tr${KEY_ROWS.has(r.name) ? ' class="key"' : ""}><td>${esc(lab(r.name))}</td><td class="num">${n0(r.n)}</td><td class="num">${zl2(r.cac)}</td><td class="num">${zl2(r.cm1_first)}</td><td${neg(r.cm2_first)}>${zl2(r.cm2_first)}</td><td class="num">${zl2(r.cm1_180)}</td><td${neg(r.cm2_180)}>${zl2(r.cm2_180)}</td><td class="num">${pc(r.ret_180)}</td><td${neg(r.cm2_365)}>${zl2(r.cm2_365)}</td><td${neg(r.mass)}>${zl(r.mass)}</td></tr>`);
+      datasets = [{ data, backgroundColor: data.map(x => x != null && x < 0 ? css("--s8") : css("--s1")), borderRadius: 4, maxBarThickness: 22 }];
+      $("#pLegend").innerHTML = `<span><i style="background:var(--s1)"></i>dodatnie</span><span><i style="background:var(--s8)"></i>ujemne</span><span>„–” = brak kohort z pełnym oknem (kampania startuje w R2). Segmenty &lt; 100 pacjentów pominięte.</span>`;
+    }
+    mk("cProfit", {
+      type: "bar", data: { labels, datasets },
+      options: opts({
+        indexAxis: "y", interaction: { mode: "nearest", axis: "y", intersect: false },
+        plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label ? c.dataset.label + ": " : ""}${fmtM(c.raw)}` } } },
+        scales: { x: { grid: { display: true, color: css("--grid") } }, y: { grid: { display: false }, ticks: { autoSkip: false } } },
+      }),
+    });
+    $("#pTable").innerHTML = tableHTML(head, rows);
+  }
+  setMetricOptions("channel"); drawP();
+}
+
+// =====================================================================
+// TAB 2
+// =====================================================================
+function renderT2() {
+  const W = D.windows;
+  const dims = [{ key: "all", label: "Wszyscy pacjenci", values: ["all"] }, ...D.cohort_dims];
+  fillSelect($("#cDim"), dims.map(d => [d.key, d.label]), "all");
+  const segLabel = v => lab(v);
+  function setSegs() {
+    const d = dims.find(x => x.key === $("#cDim").value);
+    fillSelect($("#cSeg"), d.values.map(v => [v, d.key === "all" ? "Wszyscy" : segLabel(v)]), d.values[0]);
+  }
+  const getAgg = segGroup("cAgg", drawHeat);
+  $("#cDim").onchange = () => { setSegs(); drawHeat(); drawCurve(); };
+  $("#cSeg").onchange = drawHeat;
+  $("#cMetric").onchange = () => { drawHeat(); drawCurve(); };
+  setSegs();
+  const segKey = () => $("#cDim").value === "all" ? "all" : `${$("#cDim").value}|${$("#cSeg").value}`;
+  const N = DAYS.length;
+  function groupKey(iso, agg) {
+    if (agg === "day") return iso;
+    if (agg === "month") return iso.slice(0, 7);
+    const d = new Date(iso + "T00:00:00Z"); const wd = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - wd);
+    return "tydz. " + d.toISOString().slice(0, 10);
+  }
+  function cohortRows(key, agg) {
+    const s = D.cohorts[key]; if (!s) return [];
+    const rows = new Map();
+    for (let i = 0; i < N; i++) {
+      const n = s.n[i]; if (!n) continue;
+      const g = groupKey(DAYS[i], agg);
+      if (!rows.has(g)) rows.set(g, { label: g, n: 0, days: 0, w: W.map(() => ({ n: 0, d: 0, s: [0, 0, 0, 0] })) });
+      const r = rows.get(g); r.n += n; r.days++;
+      W.forEach((k, j) => {
+        if (i + k <= N - 1) { const c = r.w[j]; c.n += n; c.d++; for (let m = 0; m < 4; m++) c.s[m] += s.w[k][m][i]; }
+      });
+    }
+    return [...rows.values()];
+  }
+  function curve(key) {
+    const s = D.cohorts[key]; if (!s) return null;
+    return W.map(k => { let n = 0, sm = [0, 0, 0, 0]; for (let i = 0; i + k <= N - 1; i++) { n += s.n[i]; for (let m = 0; m < 4; m++) sm[m] += s.w[k][m][i]; } return { n, v: sm.map(x => n ? x / n : null) }; });
+  }
+  const fmtMetric = m => m === 0 ? (v => pc(v)) : (v => zl2(v));
+  function drawHeat() {
+    const m = +$("#cMetric").value, agg = getAgg(), rows = cohortRows(segKey(), agg), f = fmtMetric(m);
+    const vals = [];
+    rows.forEach(r => r.w.forEach(c => { if (c.n) vals.push(m === 0 ? c.s[0] / c.n : c.s[m] / c.n); }));
+    const max = Math.max(...vals.map(Math.abs), 1e-9), min = Math.min(...vals, 0);
+    const diverge = m === 3 || min < 0;
+    const blue = css("--s1"), red = css("--s8");
+    const color = v => {
+      if (v == null) return "transparent";
+      if (diverge) return v >= 0 ? hexA(blue, 0.08 + 0.8 * v / max) : hexA(red, 0.08 + 0.8 * (-v) / max);
+      return hexA(blue, 0.06 + 0.84 * v / max);
+    };
+    const ink = v => (v != null && Math.abs(v) / max > 0.6) ? "#fff" : css("--ink");
+    const body = rows.map(r => {
+      const cells = r.w.map((c, j) => {
+        if (!c.n) return `<td class="c"></td>`;
+        const v = m === 0 ? c.s[0] / c.n : c.s[m] / c.n, partial = c.d < r.days;
+        const t = `<b>${esc(r.label)} · D+${W[j]}</b>${f(v)}${m === 0 ? ` (${n0(c.s[0])} z ${n0(c.n)})` : ` na pacjenta, n=${n0(c.n)}`}${partial ? "<br>okno domknięte dla " + c.d + " z " + r.days + " dni" : ""}`;
+        return `<td class="c num${partial ? " partial" : ""}" style="background:${color(v)};color:${ink(v)}" data-tip="${esc(t)}">${f(v)}${partial ? "*" : ""}</td>`;
+      }).join("");
+      return `<tr><td>${esc(r.label)}</td><td class="num">${n0(r.n)}</td>${cells}</tr>`;
+    });
+    $("#heat").innerHTML = tableHTML(["kohorta", "pacjenci", ...W.map(k => "D+" + k)], body, "heat");
+    $("#heatScale").innerHTML = diverge
+      ? `<span>${f(-max)}</span><span class="bar" style="background:linear-gradient(90deg,${hexA(red, .88)},${css("--neutral")},${hexA(blue, .88)})"></span><span>${f(max)}</span><span>· 0 = szary środek</span>`
+      : `<span>${f(0)}</span><span class="bar" style="background:linear-gradient(90deg,${hexA(blue, .06)},${hexA(blue, .9)})"></span><span>${f(max)}</span>`;
+  }
+  function drawCurve() {
+    const m = +$("#cMetric").value, d = dims.find(x => x.key === $("#cDim").value), f = fmtMetric(m);
+    const keys = d.key === "all" ? ["all"] : d.values.map(v => `${d.key}|${v}`);
+    const ds = keys.map((k, i) => {
+      const c = curve(k);
+      return { label: d.key === "all" ? "Wszyscy" : segLabel(k.split("|")[1]), data: c.map(x => x.v[m]), borderColor: css(SLOTS[i % 8]), backgroundColor: css(SLOTS[i % 8]), borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, tension: 0.2, _n: c.map(x => x.n) };
+    });
+    mk("cCurve", {
+      type: "line", data: { labels: W.map(k => "D+" + k), datasets: ds },
+      options: opts({ plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${f(c.raw)} (n=${n0(c.dataset._n[c.dataIndex])})` } } }, scales: { y: { ticks: { callback: v => m === 0 ? F0.format(v * 100) + "%" : F0.format(v) + " zł" } } } }),
+    });
+    $("#curveLegend").innerHTML = ds.map(x => `<span><i style="background:${x.borderColor}"></i>${esc(x.label)}</span>`).join("");
+    $("#curveTable").innerHTML = tableHTML(["segment", ...W.map(k => "D+" + k)], ds.map(x => `<tr><td>${esc(x.label)}</td>${x.data.map(v => `<td${neg(v)}>${f(v)}</td>`).join("")}</tr>`));
+  }
+  drawHeat(); drawCurve();
+
+  // --- przezycie
+  const km = D.km;
+  $("#kmLead").innerHTML = `Udział pacjentów z 2. zamówieniem: D+30 <b>${pc(km[30])}</b>, D+90 <b>${pc(km[90])}</b>, D+365 <b>${pc(km[365])}</b>. <b>${pc(km[90] / km[365], 0)}</b> powrotów dzieje się w pierwszych 90 dniach.`;
+  mk("cKM", {
+    type: "line",
+    data: { labels: km.map((_, i) => i), datasets: [{ label: "% z 2. zamówieniem", data: km, borderColor: css("--s1"), backgroundColor: hexA(css("--s1"), 0.1), fill: true, borderWidth: 2, pointRadius: 0 }] },
+    options: opts({
+      plugins: { tooltip: { callbacks: { title: c => "D+" + c[0].label, label: c => pc(c.raw) } }, events: { list: [{ idx: 90, color: css("--s2"), date: "D+90", title: "83% powrotów", desc: "Do 90. dnia wraca 20,5% pacjentów z 24,7%, które wracają kiedykolwiek." }, { idx: 120, color: css("--critical"), date: "D+120", title: "Pacjent „umiera”", desc: "Po 120 dniach bez zamówienia szansa na kolejne w 365 dni < 5%." }] } },
+      scales: { x: { ticks: { callback: (v, i) => i % 90 === 0 ? "D+" + i : "", autoSkip: false } }, y: { min: 0, ticks: { callback: v => F0.format(v * 100) + "%" } } },
+    }),
+  });
+  bindEventHover(charts.cKM);
+  const cond = D.cond_return;
+  $("#condLead").innerHTML = `P(kolejne zamówienie w 365 dni) po d dniach bez zamówienia. Spada poniżej 5% po <b>${D.death_day} dniach</b>. Mediana odstępu między zamówieniami ${F1.format(D.gap_pct.p50)} dnia, p90 ${F0.format(D.gap_pct.p90)} dni.`;
+  mk("cCond", {
+    type: "bar",
+    data: { labels: cond.map(c => c.d + " dni"), datasets: [{ data: cond.map(c => c.p), backgroundColor: cond.map(c => c.p < 0.05 ? css("--critical") : css("--s1")), borderRadius: 4, maxBarThickness: 30 }] },
+    options: opts({ plugins: { tooltip: { callbacks: { label: c => `${pc(c.raw)} (n=${n0(cond[c.dataIndex].n)})` } } }, scales: { y: { ticks: { callback: v => F0.format(v * 100) + "%" } } } }),
+  });
+  const R1 = D.r1;
+  $("#r1Lead").innerHTML = `${pc(R1.any_return / R1.n)} pacjentów R1 kiedykolwiek wróciło, ale ${pc(R1.returned_only_r1 / R1.n)} zrobiło to jeszcze w R1. „Kupił w R2” rośnie z wiekiem kohorty: to metryka kalendarzowa, nie retencja.`;
+  mk("cR1", {
+    type: "bar",
+    data: { labels: R1.cohorts.map(c => c.m), datasets: [
+      { label: "wrócił kiedykolwiek", data: R1.cohorts.map(c => c.ever), backgroundColor: css("--s1"), borderRadius: 4, maxBarThickness: 14 },
+      { label: "kupił w R2", data: R1.cohorts.map(c => c.in_r2), backgroundColor: css("--s2"), borderRadius: 4, maxBarThickness: 14 }] },
+    options: opts({ plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${pc(c.raw)}` } } }, scales: { y: { ticks: { callback: v => F0.format(v * 100) + "%" } } } }),
+  });
+
+  // --- os czasu
+  const T = D.timeline;
+  const TM = [
+    ["cr", "CR sesja → zamówienie", "ord_s", "sess", pc], ["cm2o", "CM2 / zamówienie (dzienne)", "cm2", "orders", zl2],
+    ["l4", "Udział celu L4 w zamówieniach", "l4", "orders", pc], ["ref", "% zwrotów po wizycie (refunded)", "refunded", "orders", pc],
+    ["inapp", "% sesji z in-app browserów", "inapp", "sess", pc], ["delay", "Opóźnienie startu wizyty internisty: średnia [min]", "delay_sum", "delay_n", v => F1.format(v) + " min"],
+    ["p50", "Opóźnienie internisty: mediana [min]", "p50", null, v => F1.format(v) + " min"], ["p90", "Opóźnienie internisty: p90 [min]", "p90", null, v => F1.format(v) + " min"],
+    ["sess", "Sesje / dzień", "sess", null, n0], ["orders", "Zamówienia / dzień", "orders", null, n0], ["new", "Nowi pacjenci / dzień", "new", null, n0], ["spend", "Wydatki CPC / dzień", "spend", null, zl],
+  ];
+  fillSelect($("#tMetric"), TM.map(m => [m[0], m[1]]), "cm2o");
+  const KINDS = { marketing: ["Marketing", "--s1"], produkt: ["Produkt / CRM", "--s3"], operacje: ["Operacje", "--s2"], skutek: ["Skutek w danych", "--s7"], dane: ["Jakość danych", "--s5"] };
+  const active = new Set(Object.keys(KINDS));
+  $("#tKinds").innerHTML = Object.entries(KINDS).map(([k, [l, c]]) => `<label style="flex-direction:row;align-items:center;gap:4px;font-size:12px"><input type="checkbox" data-k="${k}" checked><i style="background:var(${c})"></i>${l}</label>`).join("");
+  $("#tKinds").onchange = e => { const k = e.target.dataset.k; e.target.checked ? active.add(k) : active.delete(k); drawT(); drawEvTable(); };
+  const getSmooth = segGroup("tSmooth", drawT);
+  $("#tMetric").onchange = drawT;
+  let hl = null;
+  const EVS = D.events.map((e, i) => ({ ...e, n: i + 1, idx: dayIdx(e.date) }));
+  function series(m, w) {
+    if (m[0] === "p50" || m[0] === "p90") return T[`${m[0]}_${w}`];
+    const num = T[m[2]], den = m[3] ? T[m[3]] : null, out = [];
+    let sn = 0, sd = 0;
+    for (let i = 0; i < num.length; i++) {
+      sn += num[i]; sd += den ? den[i] : 1;
+      if (i >= w) { sn -= num[i - w]; sd -= den ? den[i - w] : 1; }
+      out.push(sd > 0 ? sn / sd : null);
+    }
+    return out;
+  }
+  function drawT() {
+    const m = TM.find(x => x[0] === $("#tMetric").value), w = +getSmooth(), data = series(m, w);
+    const list = EVS.filter(e => active.has(e.kind)).map(e => ({ ...e, color: css(KINDS[e.kind][1]), hl: hl === e.n }));
+    mk("cTimeline", {
+      type: "line",
+      data: { labels: DAYS, datasets: [{ label: m[1], data, borderColor: css("--ink2"), borderWidth: 1.6, pointRadius: 0, pointHoverRadius: 4, spanGaps: true }] },
+      options: opts({
+        layout: { padding: { top: 4 } },
+        plugins: { tooltip: { callbacks: { label: c => `${m[1]}: ${m[4](c.raw)}` } }, events: { list } },
+        scales: { x: { ticks: { callback: (v, i) => DAYS[i].endsWith("-01") && ["01", "04", "07", "10"].includes(DAYS[i].slice(5, 7)) ? DAYS[i].slice(0, 7) : "", autoSkip: false } }, y: { ticks: { callback: v => m[4] === pc ? F0.format(v * 100) + "%" : F0.format(v) } } },
+      }),
+    });
+    bindEventHover(charts.cTimeline);
+  }
+  function drawEvTable() {
+    const rows = EVS.filter(e => active.has(e.kind)).map(e => `<tr class="expand" data-n="${e.n}"><td class="num">${e.n}</td><td class="l num">${e.date}</td><td class="l"><span class="chip"><i style="background:var(${KINDS[e.kind][1]});width:8px;height:8px;border-radius:2px;display:inline-block"></i>${KINDS[e.kind][0]}</span></td><td class="l"><b>${esc(e.title)}</b></td><td class="l">${esc(e.desc)}</td></tr>`);
+    $("#evTable").innerHTML = tableHTML(["#", "data", "typ", "zdarzenie", "opis i wpływ"], rows);
+    $$("#evTable tr[data-n]").forEach(tr => tr.onclick = () => { hl = +tr.dataset.n === hl ? null : +tr.dataset.n; drawT(); $("#cTimeline").scrollIntoView({ behavior: "smooth", block: "center" }); });
+  }
+  drawT(); drawEvTable();
+}
+
+// =====================================================================
+// TAB 3
+// =====================================================================
+function renderT3() {
+  const F = D.funnel;
+  const yearOf = m => m < "2025-10" ? "Y1" : "Y2";
+  const IN_APP = new Set(["Instagram", "Facebook", "TikTok"]), NATIVE = new Set(["Chrome", "Safari"]);
+  fillSelect($("#fDevice"), [["", "Wszystkie"], ...F.devices.map(d => [d, d])], "");
+  fillSelect($("#fBrowser"), [["", "Wszystkie"], ["@inapp", "In-app (IG / FB / TikTok)"], ["@native", "Chrome + Safari"], ...F.browsers.map(b => [b, b])], "");
+  fillSelect($("#fChannel"), [["", "Wszystkie"], ...F.channels.map(c => [c, lab(c)])], "");
+  const setMonths = () => { const y = $("#fYear").value; fillSelect($("#fMonth"), [["", "Wszystkie"], ...F.months.filter(m => !y || yearOf(m) === y).map(m => [m, m])], ""); };
+  setMonths();
+  $("#fYear").onchange = () => { setMonths(); drawF(); };
+  ["#fMonth", "#fDevice", "#fBrowser", "#fChannel"].forEach(s => $(s).onchange = drawF);
+  const bOk = (bi, sel) => !sel || (sel === "@inapp" ? IN_APP.has(F.browsers[bi]) : sel === "@native" ? NATIVE.has(F.browsers[bi]) : F.browsers[bi] === sel);
+  function agg(pred) {
+    const t = new Array(8).fill(0);
+    for (const r of F.rows) if (pred(r)) for (let j = 0; j < 8; j++) t[j] += r[4 + j];
+    return t;
+  }
+  const STEPS = ["Sesje", "S1 wybór usługi", "S2 termin", "S3 konto", "S4 start płatności", "S5 płatność OK", "Zamówienie", "Odbyta wizyta"];
+  function drawF() {
+    const y = $("#fYear").value, mo = $("#fMonth").value, dv = $("#fDevice").value, br = $("#fBrowser").value, ch = $("#fChannel").value;
+    const period = r => (!y || yearOf(F.months[r[0]]) === y) && (!mo || F.months[r[0]] === mo);
+    const sel = agg(r => period(r) && (!dv || F.devices[r[1]] === dv) && bOk(r[2], br) && (!ch || F.channels[r[3]] === ch));
+    const base = agg(period);
+    $("#fKpis").innerHTML = [
+      kpi("Sesje", n0(sel[0]), `${pc(sel[0] / base[0])} ruchu w okresie`),
+      kpi("CR sesja → zamówienie", pc(sel[6] / sel[0], 2), `cały ruch: ${pc(base[6] / base[0], 2)}`),
+      kpi("Odbyte wizyty / sesja", pc(sel[7] / sel[0], 2), `cały ruch: ${pc(base[7] / base[0], 2)}`),
+      kpi("Sukces płatności (S5)", pc(sel[5] / sel[4]), `cały ruch: ${pc(base[5] / base[4])}`),
+    ].join("");
+    mk("cFunnel", {
+      type: "bar",
+      data: { labels: STEPS, datasets: [
+        { label: "wybrany segment", data: sel.map(v => sel[0] ? v / sel[0] : 0), backgroundColor: css("--s1"), borderRadius: 4, maxBarThickness: 18 },
+        { label: "cały ruch", data: base.map(v => base[0] ? v / base[0] : 0), backgroundColor: css("--axis"), borderRadius: 4, maxBarThickness: 18 }] },
+      options: opts({ indexAxis: "y", plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${pc(c.raw)} sesji` } } }, scales: { x: { max: 1, grid: { display: true, color: css("--grid") }, ticks: { callback: v => F0.format(v * 100) + "%" } }, y: { grid: { display: false } } } }),
+    });
+    const rows = STEPS.map((s, j) => {
+      const st = j ? sel[j] / sel[j - 1] : null, bs = j ? base[j] / base[j - 1] : null, d = j ? st - bs : null;
+      return `<tr><td>${s}</td><td class="num">${n0(sel[j])}</td><td class="num">${pc(sel[j] / sel[0])}</td><td class="num">${j ? pc(st) : "–"}</td><td class="num">${j ? pc(bs) : "–"}</td><td class="num ${d != null && d < -0.02 ? "bad" : ""}">${j ? pp(d) : "–"}</td></tr>`;
+    });
+    $("#fTable").innerHTML = tableHTML(["krok", "sesje", "% sesji", "konwersja kroku", "cały ruch", "różnica"], rows);
+    const ms = F.months.filter(m => !y || yearOf(m) === y);
+    const line = grp => ms.map(m => { const mi = F.months.indexOf(m); const a = agg(r => r[0] === mi && (!dv || F.devices[r[1]] === dv) && (!ch || F.channels[r[3]] === ch) && (grp === "in" ? IN_APP.has(F.browsers[r[2]]) : NATIVE.has(F.browsers[r[2]]))); return a[0] >= 30 ? a[6] / a[0] : null; });
+    mk("cInapp", {
+      type: "line",
+      data: { labels: ms, datasets: [
+        { label: "Chrome/Safari", data: line("nat"), borderColor: css("--s1"), backgroundColor: css("--s1"), borderWidth: 2, pointRadius: 3 },
+        { label: "In-app", data: line("in"), borderColor: css("--s2"), backgroundColor: css("--s2"), borderWidth: 2, pointRadius: 3 }] },
+      options: opts({ plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${pc(c.raw)}` } } }, scales: { y: { min: 0, ticks: { callback: v => F0.format(v * 100) + "%" } } } }),
+    });
+  }
+  drawF();
+
+  // --- dekompozycja
+  const getDc = segGroup("dcSeg", drawDc);
+  function drawDc() {
+    const d = D.decomp[getDc()], cr = D.decomp.cr;
+    const parts = [["Miks ruchu", d.mix], ["S1 usługa", d.steps[0]], ["S2 termin", d.steps[1]], ["S3 konto", d.steps[2]], ["S4 start płatn.", d.steps[3]], ["S5 płatność", d.steps[4]], ["Reszta", d.steps[5]]].filter(p => Math.abs(p[1]) > 1e-6);
+    const labels = ["CR R1", ...parts.map(p => p[0]), "CR R2"], data = [], colors = [];
+    let run = cr.Y1, low = Math.min(cr.Y1, cr.Y2); data.push([0, run]); colors.push(css("--s1"));
+    parts.forEach(([_, v]) => { data.push([run, run + v]); run += v; low = Math.min(low, run); colors.push(v < 0 ? css("--s8") : css("--s3")); });
+    data.push([0, cr.Y2]); colors.push(css("--s1"));
+    $("#dcLead").innerHTML = `CR ${pc(cr.Y1, 1)} → ${pc(cr.Y2, 1)}: <b>miks ${pp(d.mix)}</b>, jakość wewnątrz segmentów <b class="good">${pp(d.rate)}</b>. Ruch przesunął się do segmentów, które zawsze konwertowały słabiej (Meta/TikTok, mobile, in-app), a w każdym segmencie z osobna lejek działa tak samo albo lepiej. Redesign checkoutu tego nie naprawi.`;
+    const lo = low - 0.01;
+    mk("cDecomp", {
+      type: "bar",
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, borderSkipped: false, maxBarThickness: 40 }] },
+      options: opts({ interaction: { mode: "nearest", intersect: true }, plugins: { tooltip: { callbacks: { label: c => { const i = c.dataIndex; return i === 0 || i === labels.length - 1 ? pc(c.raw[1], 2) : pp(c.raw[1] - c.raw[0]); } } } }, scales: { y: { min: Math.floor(lo * 1000) / 1000, ticks: { callback: v => F1.format(v * 100) + "%" } } } }),
+    });
+  }
+  drawDc();
+
+  // --- operacje
+  const pay = Object.entries(D.ops.payment).sort((a, b) => a[1] - b[1]);
+  mk("cPay", {
+    type: "bar",
+    data: { labels: pay.map(p => lab(p[0])), datasets: [{ data: pay.map(p => p[1]), backgroundColor: pay.map(p => p[0].startsWith("crm_") ? css("--s2") : css("--axis")), borderRadius: 4, maxBarThickness: 18 }] },
+    options: opts({ indexAxis: "y", plugins: { tooltip: { callbacks: { label: c => pc(c.raw) } } }, scales: { x: { min: 0.6, max: 1, grid: { display: true, color: css("--grid") }, ticks: { callback: v => F0.format(v * 100) + "%" } }, y: { grid: { display: false }, ticks: { autoSkip: false } } } }),
+  });
+  const dl = D.ops.delay, ms = dl.map(x => x.m);
+  mk("cDelay", {
+    type: "line",
+    data: { labels: ms, datasets: [
+      { label: "średnia", data: dl.map(x => x.mean), borderColor: css("--s1"), backgroundColor: css("--s1"), borderWidth: 2, pointRadius: 3 },
+      { label: "p90", data: dl.map(x => x.p90), borderColor: css("--s2"), backgroundColor: css("--s2"), borderWidth: 2, pointRadius: 3 }] },
+    options: opts({ plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${F1.format(c.raw)} min` } }, events: { list: [
+      { idx: ms.indexOf("2025-11"), color: css("--s7"), date: "2025-11-03", title: "Start Meta L4", desc: "meta_prosp_l4_szybko + kod L4SZYBKO20" },
+      { idx: ms.indexOf("2026-02"), color: css("--s7"), date: "2026-02-09", title: "Start TikTok L4", desc: "tt_prosp_l4_15min + kod TIKTOK25" }] } }, scales: { y: { min: 0, ticks: { callback: v => v + " min" } } } }),
+  });
+  bindEventHover(charts.cDelay);
+  const con = Object.entries(D.ops.consent).sort((a, b) => b[1].consent - a[1].consent);
+  mk("cConsent", {
+    type: "bar",
+    data: { labels: con.map(c => lab(c[0])), datasets: [{ data: con.map(c => c[1].consent), backgroundColor: con.map(c => ["tiktok", "meta"].includes(c[0]) ? css("--s2") : css("--s1")), borderRadius: 4, maxBarThickness: 30 }] },
+    options: opts({ plugins: { tooltip: { callbacks: { label: c => pc(c.raw) } } }, scales: { y: { min: 0, max: 1, ticks: { callback: v => F0.format(v * 100) + "%" } } } }),
+  });
+  $("#consentTable").innerHTML = tableHTML(["kanał rejestracji (R2)", "rejestracje", "% zgody", "śr. wiek"], con.map(([k, v]) => `<tr><td>${lab(k)}</td><td class="num">${n0(v.n)}</td><td class="num">${pc(v.consent)}</td><td class="num">${F1.format(v.age)}</td></tr>`));
+}
+
+// =====================================================================
+// TAB 4
+// =====================================================================
+function renderT4() {
+  const S = D.sizing.map(s => ({ ...s, ratio: s.central / s.days }));
+  const total = S.reduce((a, s) => a + s.central, 0);
+  const core = S.filter(s => !["a3 realokacja", "c1 in-app"].includes(s.id)).reduce((a, s) => a + s.central, 0);
+  const quick = S.filter(s => s.days <= 7).reduce((a, s) => a + s.central, 0);
+  $("#planKpis").innerHTML = [
+    kpi("Suma, scenariusz bazowy", zl(total), `+${pc(total / D.cm2_run_rate)} vs CM2 run-rate ${zl(D.cm2_run_rate)}/rok`),
+    kpi("Bez a3 i c1 (niska pewność)", zl(core), "pewniejszy rdzeń planu"),
+    kpi("Wdrożenie ≤ 7 dni", zl(quick), "decyzje biznesowe bez developmentu"),
+    kpi("Inicjatywy", S.length, "wycena roczna, run-rate 2026-04…09 × 2"),
+  ].join("");
+  let sortKey = "ratio", dir = -1, open = new Set();
+  const COLS = [
+    ["id", "#", s => `<b>${esc(s.id.split(" ")[0])}</b>`], ["inicjatywa", "Inicjatywa", s => `<b>${esc(s.inicjatywa.replace(/`/g, ""))}</b><br><span style="color:var(--ink2)">${esc(s.desc)}</span>`],
+    ["central", "ΔCM2 / rok", s => `<span${s.central < 0 ? ' class="bad"' : ""}>${zl(s.central)}</span>`], ["low", "zakres min–max", s => `${zl(s.low)} … ${zl(s.high)}`],
+    ["days", "czas wdrożenia", s => s.days + (s.days === 1 ? " dzień" : " dni")], ["ratio", "wartość / dzień wdrożenia", s => zl(s.ratio)],
+    ["effort", "koszt / złożoność", s => esc(s.effort)], ["conf", "pewność", s => `<span class="chip ${s.conf === "wysoka" ? "c-good" : s.conf === "niska" ? "c-bad" : "c-warn"}">${esc(s.conf)}</span>`],
+  ];
+  function draw() {
+    const rows = [...S].sort((a, b) => (typeof a[sortKey] === "string" ? a[sortKey].localeCompare(b[sortKey]) : a[sortKey] - b[sortKey]) * dir);
+    const body = rows.map(s => {
+      const main = `<tr class="expand" data-id="${esc(s.id)}">${COLS.map(([k, _, f]) => `<td class="${k === "inicjatywa" || k === "effort" || k === "id" ? "l" : "num"}">${f(s)}</td>`).join("")}</tr>`;
+      const det = open.has(s.id) ? `<tr class="detail"><td colspan="${COLS.length}"><div class="dgrid">
+        <div><b>Główny KPI</b><br>${esc(s.kpi)}</div><div><b>Metryka obronna (guardrail)</b><br>${esc(s.guard)}</div>
+        <div><b>Walidacja</b><br>${esc(s.method)}</div><div><b>Założenia wyceny</b><br>${esc(s.zalozenia)}</div>
+        ${s.deps ? `<div><b>Zależności / nakładanie</b><br>${esc(s.deps)}</div>` : ""}</div></td></tr>` : "";
+      return main + det;
+    });
+    $("#planTable").innerHTML = `<table><thead><tr>${COLS.map(([k, l]) => `<th class="sortable ${k === "inicjatywa" || k === "effort" || k === "id" ? "l" : ""}" data-k="${k}">${l}</th>`).join("")}</tr></thead><tbody>${body.join("")}</tbody></table>`;
+    $$("#planTable th[data-k]").forEach(th => th.onclick = () => { const k = th.dataset.k; dir = sortKey === k ? -dir : -1; sortKey = k; draw(); });
+    $$("#planTable tr[data-id]").forEach(tr => tr.onclick = () => { const id = tr.dataset.id; open.has(id) ? open.delete(id) : open.add(id); draw(); });
+    mk("cPlan", {
+      type: "bar",
+      data: { labels: rows.map(s => s.id.split(" ")[0] + " · " + s.inicjatywa.replace(/`/g, "").slice(0, 48)), datasets: [
+        { label: "ΔCM2 / rok", data: rows.map(s => s.central), backgroundColor: css("--s1"), borderRadius: 4, barPercentage: 0.45, grouped: false, order: 1 },
+        { label: "zakres", data: rows.map(s => [s.low, s.high]), backgroundColor: hexA(css("--s1"), 0.22), borderRadius: 4, barPercentage: 0.9, grouped: false, order: 2 }] },
+      options: opts({ indexAxis: "y", plugins: { tooltip: { callbacks: { label: c => c.datasetIndex === 0 ? `bazowy: ${zl(c.raw)}` : `zakres: ${zl(c.raw[0])} … ${zl(c.raw[1])}` } } }, scales: { x: { grid: { display: true, color: css("--grid") }, ticks: { callback: v => F0.format(v / 1000) + " tys." } }, y: { grid: { display: false }, ticks: { autoSkip: false } } } }),
+    });
+  }
+  draw();
+}
+
+// =====================================================================
+// TAB 5
+// =====================================================================
+const UNKNOWNS = [
+  { q: "Konta TEST-QA: błąd hurtowni czy realny wyciek?", risk: "2 071 zamówień, 51 775 zł kosztu lekarzy w scenariuszu wypłat (ok. 3,4 tys. zł/mies., rośnie); zawyżone metryki o 22 „pacjentów”.", gap: "Eksport wypłat dla lekarzy per wizyta (order_id, doctor_id), lista kont QA od zespołu QA, informacja, kto „rozpoczyna” 1-minutowe czaty.", how: "Join order_id → biling wypłat. Jeśli są wypłaty: wyciek, więc blokada rozliczeń kont is_test + korekta. Jeśli nie: flaga is_test w hurtowni i filtr we wszystkich dashboardach." },
+  { q: "Elastyczność cenowa: pediatra 95 → 119 zł, psycholog 99 → 119 zł", risk: "Spadek wolumenu > 15% zmniejsza zysk, ale obecne CM1 jest ujemne, więc nawet −30% wolumenu daje ok. +30 tys. zł/rok.", gap: "Brak eventu wyświetlenia ceny i porzucenia po zobaczeniu ceny; brak cen konkurencji.", how: "Test A/B ceny na kroku wyboru usługi (losowanie po visitor_id, 4 tygodnie). KPI: CM1 na sesję w specjalizacji; guardrail: konwersja S2. Pilot najpierw na psychologu (mały wolumen)." },
+  { q: "TelemediGO: przyczynowość czy samoselekcja? Reakcja na ograniczenie rabatu", risk: "Członkowie GO wracają w 45% vs 27%, ale kupują je pacjenci, którzy i tak planują wracać. Zdjęcie rabatu u specjalistów może obniżyć sprzedaż GO o więcej niż 10%.", gap: "Losowej ekspozycji na ofertę GO; danych o rezygnacji z zakupu GO.", how: "Holdout 20% bez oferty GO przy kasie (ITT), porównanie kohort D+90/D+180 CM2. Nowe zasady rabatu tylko dla nowych członkostw i porównanie kohort członkostw przed/po." },
+  { q: "In-app browsery Meta: samoselekcja czy tarcie techniczne?", risk: "In-app 6,6% vs 16,3% CR; po kontroli kanału (Meta, Android) 5,1% vs 9,6%. Na TikToku brak luki, co wskazuje na samoselekcję. Ryzyko: development bez efektu.", gap: "Błędy JS i WebView, czasy ładowania, event „otwórz w przeglądarce”, metoda płatności przy nieudanej próbie.", how: "Test A/B: baner lub wymuszenie otwarcia w natywnej przeglądarce + BLIK one-click / Apple Pay vs kontrola, 4 tygodnie na ruchu in-app Meta. Jeśli efekt < 1 pp, to samoselekcja i temat zamykamy." },
+  { q: "Dlaczego 20–26% płatności z linków e-mail/SMS się nie udaje?", risk: "Ok. 9–19 tys. zł CM2/rok i frustracja najbardziej lojalnych pacjentów (zalogowani, powracający).", gap: "Logi bramki płatniczej (kody błędów, metoda, 3DS/BLIK), user-agent klienta poczty, czas od wysyłki do kliknięcia, czas życia tokenu sesji / magic linku.", how: "Join session_id → logi bramki. Segmentacja porażek po wieku linku, kliencie poczty (webview Gmail/Outlook) i metodzie płatności. Hipoteza: wygasły token albo webview klienta poczty blokuje przekierowanie BLIK/3DS." },
+  { q: "Elastyczność popytu bez rabatu L4SZYBKO20 i krańcowy CAC gs_generic_erecepta", risk: "a2: od −27 do +62 tys. zł zależnie od utraty konwersji; a3: od −53 do +94 tys. zł zależnie od krańcowego CAC.", gap: "Brak wariantu bez kodu na tej samej kampanii; brak krzywej odpowiedzi budżetu Google.", how: "a2: A/B landingu z kodem i bez (50/50, 4 tygodnie). a3: podnoszenie budżetu +25% co 2 tygodnie z pomiarem krańcowego CAC; stop, gdy krańcowe CM1 D+180 < CAC." },
+  { q: "Prawdziwy koszt lekarza i skutki przeciążenia", risk: "Koszt lekarza to stała z README (25/100/200 zł); prawdziwe stawki mogą zależeć od trybu i czasu wizyty. Opóźnienie internisty 11 min (p90 32 min) może podbijać zwroty L4 i obniżać oceny.", gap: "Stawek lekarzy per wizyta, doctor_id, grafików i dostępności lekarzy.", how: "Model kosztu na danych z bilingu; regresja zwrotów i ocen na opóźnieniu na poziomie wizyty z kontrolą lekarza i godziny; plan podaży lekarzy przed kolejnym skalowaniem kampanii." },
+];
+function renderT5() {
+  $("#unknowns").innerHTML = UNKNOWNS.map((u, i) => `<div class="unk"><h3>${i + 1}. ${esc(u.q)}</h3><dl><dt>Ryzyko</dt><dd>${esc(u.risk)}</dd><dt>Brakuje</dt><dd>${esc(u.gap)}</dd><dt>Jak domknąć</dt><dd>${esc(u.how)}</dd></dl></div>`).join("");
+  const H = D.hygiene, tz = H.tz;
+  const tzRows = [
+    ["orders.created_at", tz["orders.created_at"]["= offset PL (CET/CEST)"], tz["orders.created_at"].tested, "czas PL (CET/CEST, z DST)"],
+    ["go_memberships.purchased_at", tz["go_memberships.purchased_at"]["= offset PL (CET/CEST)"], tz["go_memberships.purchased_at"].tested, "czas PL"],
+    ["users.registered_at", tz["users.registered_at"]["= offset PL"], Object.values(tz["users.registered_at"]).reduce((a, b) => a + b, 0), "czas PL"],
+  ].map(([k, ok, n, w]) => `<tr><td><code>${k}</code></td><td class="num">${n0(ok)} / ${n0(n)}</td><td class="num">${pc(ok / n)}</td><td class="l">${w}</td></tr>`);
+  const mu = tz["marketing_spend vs sessions (dzien UTC)"], mp = tz["marketing_spend vs sessions (dzien Europe/Warsaw)"];
+  tzRows.push(`<tr><td><code>marketing_spend.date</code></td><td class="num">korelacja UTC ${mu.corr.toFixed(4).replace(".", ",")} vs PL ${mp.corr.toFixed(4).replace(".", ",")}</td><td class="num">–</td><td class="l">nierozstrzygalne z danych; przyjęto README (dzień PL)</td></tr>`);
+  $("#hTz").innerHTML = tableHTML(["kolumna", "zgodne z offsetem PL", "%", "wniosek"], tzRows);
+  const N = H.night;
+  $("#hNight").innerHTML = tableHTML(["miara", "n", "% bazy"], [
+    ["Sesje lokalnie 22:00–02:00", N.sessions_night_22_02, N.sessions_total], ["Sesje: zmiana dnia UTC → PL", N.sessions_day_shift, N.sessions_total],
+    ["Sesje: zmiana miesiąca", N.sessions_month_shift, N.sessions_total], ["Zamówienia: dzień PL ≠ dzień UTC", N.orders_day_shift, N.orders_total],
+    ["Zamówienia: naiwny join po dacie (niezgodny dzień)", N.orders_naive_join_day_mismatch, N.orders_total],
+    ["Pacjenci: zmiana dnia kohorty", N.first_order_cohort_day_shift, null], ["Pacjenci: zmiana miesiąca kohorty", N.first_order_cohort_month_shift, null],
+  ].map(([l, v, b]) => `<tr><td>${l}</td><td class="num">${n0(v)}</td><td class="num">${b ? pc(v / b, 2) : "–"}</td></tr>`).concat([`<tr><td colspan="3" class="l" style="color:var(--ink2)">Wniosek: strefy psują analizy dzienne (ok. 2,5% rekordów w złym dniu), ale są pomijalne dla kohort miesięcznych i YoY.</td></tr>`]));
+  const I = H.identity;
+  $("#hId").innerHTML = tableHTML(["miara", "wartość"], [
+    ["visitor_id ogółem", n0(I.visitors)], ["visitor_id kiedykolwiek zalogowane", `${n0(I.visitors_ever_logged)} (${pc(I.visitors_ever_logged / I.visitors)})`],
+    ["Pacjenci z > 1 visitor_id", `${n0(I.users_in_sessions - I.user_visitor_dist["1"])} (${pc(1 - I.user_visitor_dist["1"] / I.users_in_sessions)})`],
+    ["Pacjenci z anonimową sesją przed 1. logowaniem", `${n0(I.users_with_pre_login_anon)} (${pc(I.users_with_pre_login_anon / I.users_in_sessions)}), mediana ${F1.format(I.median_lag_days)} dnia`],
+    ["Płacący: user_id vs visitor_id", `${n0(I.paying_users)} vs ${n0(I.paying_visitors)} (licznik na cookie +${pc(I.paying_visitors / I.paying_users - 1)})`],
+    ["Powtórne zamówienia z „nowego” visitor_id", `${n0(I.repeat_orders_on_new_visitor)}`],
+  ].map(([a, b]) => `<tr><td>${a}</td><td class="num">${b}</td></tr>`));
+  const A = H.attribution, ch = Object.keys(A.lt).sort((a, b) => A.lt[b] - A.lt[a]);
+  $("#hAttr").innerHTML = tableHTML(["kanał", "Last-Touch", "FT tylko zalogowane", "FT ze stitchingiem"], ch.map(c => `<tr><td>${lab(c)}</td><td class="num">${pc(A.lt[c] / A.n)}</td><td class="num">${pc((A.ft_logged[c] || 0) / A.n)}</td><td class="num">${pc((A.ft_stitched[c] || 0) / A.n)}</td></tr>`).concat([`<tr><td colspan="4" class="l" style="color:var(--ink2)">Kanał FT ≠ LT dla ${pc(A.ft_ne_lt / A.n)} pacjentów; stitching zmienia FT dla ${pc(A.ft_stitched_ne_ft_logged / A.n)}.</td></tr>`]));
+  const C = H.clean, w = H.dup_window;
+  $("#hClean").innerHTML = tableHTML(["etap", "zamówienia"], [
+    ["Surowe wiersze orders.csv", n0(C.raw)], [`− duplikaty ETL (${w.from} … ${w.to}, ${pc(w.dups / w.unique_in_window, 0)} zamówień okna)`, "−" + n0(C.etl_dups)],
+    ["− zamówienia 22 kont testowych (1 781 TEST-QA + 290 testów zwrotu)", "−" + n0(C.test_orders)], ["<b>= Clean Production</b>", `<b>${n0(C.prod_orders)}</b>`],
+    ["Pacjenci produkcyjni", n0(C.patients)], ["Koszt lekarza kont testowych (scenariusz wypłat)", zl(H.test.doctor_cost_scenario_B)],
+  ].map(([a, b]) => `<tr><td>${a}</td><td class="num">${b}</td></tr>`));
+  $("#hRules").innerHTML = tableHTML(["#", "reguła", "efekt"], D.cleaning.map(r => `<tr><td>${r[0]}</td><td class="l">${r[1]}</td><td class="l">${r[2] || ""}</td></tr>`));
+  const drawA = () => {
+    const q = $("#aSearch").value.toLowerCase();
+    $("#hAssum").innerHTML = tableHTML(["#", "założenie", "uzasadnienie / ryzyko"], D.assumptions.filter(r => !q || r.join(" ").toLowerCase().includes(q)).map(r => `<tr><td>${r[0]}</td><td class="l">${r[1]}</td><td class="l">${r[2] || ""}</td></tr>`));
+  };
+  $("#aSearch").oninput = drawA; drawA();
+}
+
+// ---------- tabs & theme ----------
+const RENDER = { t1: renderT1, t2: renderT2, t3: renderT3, t4: renderT4, t5: renderT5 };
+const rendered = new Set();
+function show(id) {
+  $$("nav [role=tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === id ? "true" : "false"));
+  $$("section[role=tabpanel]").forEach(s => s.classList.toggle("active", s.id === id));
+  if (!rendered.has(id)) { RENDER[id](); rendered.add(id); }
+  try { history.replaceState(null, "", "#" + id); } catch (e) { /* file:// */ }
+}
+$$("nav [role=tab]").forEach(b => b.onclick = () => show(b.dataset.tab));
+const THEMES = ["auto", "light", "dark"];
+let theme = "auto";
+try { theme = localStorage.getItem("audit-theme") || "auto"; } catch (e) { /* brak storage */ }
+const qTheme = new URLSearchParams(location.search).get("theme");
+if (THEMES.includes(qTheme)) theme = qTheme;
+function setTheme(t) {
+  theme = t;
+  if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
+  $("#themeBtn").textContent = "Motyw: " + { auto: "auto", light: "jasny", dark: "ciemny" }[t];
+  try { localStorage.setItem("audit-theme", t); } catch (e) { /* brak storage */ }
+  applyChartTheme();
+  const cur = $("section.active").id;
+  rendered.clear();
+  Object.keys(charts).forEach(k => { charts[k].destroy(); delete charts[k]; });
+  show(cur);
+}
+$("#themeBtn").onclick = () => setTheme(THEMES[(THEMES.indexOf(theme) + 1) % 3]);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (theme === "auto") setTheme("auto"); });
+$("#gen").textContent = D.generated;
+applyChartTheme();
+const start = (location.hash || "#t1").slice(1);
+setTheme(theme);
+if (RENDER[start] && start !== "t1") show(start);
+scrollTo(0, 0);
+</script>
+</body>
+</html>

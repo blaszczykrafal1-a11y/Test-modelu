@@ -237,6 +237,119 @@ def compute_cac(ds):
             "aff_lt": aff_lt, "aff_ft": aff_ft}
 
 
+DATA_END = date(2026, 9, 30)
+WINDOWS = (7, 14, 30, 60, 90, 180, 365)
+L4_CODES = {"L4SZYBKO20", "TIKTOK25"}
+IN_APP = {"Instagram", "Facebook", "TikTok"}
+
+
+def code_group(c):
+    if c in L4_CODES:
+        return "kod L4"
+    return {"brak": "brak kodu", "GO": "rabat GO"}.get(c, "inne kody")
+
+
+def bgroup(b):
+    return "in_app" if b in IN_APP else ("chrome/safari" if b in ("Chrome", "Safari") else "inne")
+
+
+def enrich_patients(ds):
+    """Segmenty kohortowe i okna D+k (A17). Wymaga compute_cac(ds). p['win'][k] = (powrot, net, cm1, cm2)."""
+    go_by_user = defaultdict(list)
+    for g in ds.go:
+        go_by_user[g["uid"]].append(g)
+    for p in ds.patients.values():
+        f, os_ = p["first_t"], p["orders"]
+        gs = go_by_user.get(p["uid"], [])
+        first = os_[0]
+        p["code_group"] = code_group(p["first_code"])
+        p["go_path"] = ("GO przy 1. zam." if any(g["oid"] == first["oid"] for g in gs)
+                        else ("GO kupione pozniej" if gs else "bez GO"))
+        p["first_cat"] = "specjalista" if first["spec"] != "internista" else f"internista: {first['purpose']}"
+        p["ret_days"] = [(o["t"] - f).total_seconds() / 86400 for o in os_[1:]]
+        p["win"] = {}
+        for k in WINDOWS:
+            if f.date() + timedelta(days=k) > DATA_END:
+                continue
+            lim = f + timedelta(days=k)
+            fees = sum(g["fee"] for g in gs if g["t"] <= lim)
+            net = sum(o["net"] for o in os_ if o["t"] <= lim) + fees
+            cm1 = sum(o["cm1"] for o in os_ if o["t"] <= lim) + fees
+            ret = any(d <= k for d in p["ret_days"])
+            p["win"][k] = (ret, net, cm1, cm1 - p["cac_ft"])
+    return go_by_user
+
+
+def session_funnel(ds, ev_by_sid):
+    """Flagi lejka per sesja produkcyjna (A19): s['f'] = (S1, S2, S3, S4, S5, zamowienie)."""
+    order_sids = {o["sid"] for o in ds.orders}
+    prod, inconsist = [], defaultdict(int)
+    for s in ds.sessions.values():
+        if ds.is_test_session(s):
+            continue
+        ev = ev_by_sid.get(s["sid"], {})
+        logged_entry = bool(s["user"]) and "account_completed" not in ev
+        s1 = "service_selected" in ev
+        s2 = s1 and "slot_selected" in ev
+        s3 = s2 and ("account_completed" in ev or logged_entry)
+        s4 = s3 and "payment_started" in ev
+        s5 = s4 and "payment_succeeded" in ev
+        od = s["sid"] in order_sids
+        s["f"] = (s1, s2, s3, s4, s5, od and s5)
+        s["logged_entry"] = logged_entry
+        s["bg"] = bgroup(s["browser"])
+        s["year"] = year_of(s["t"])
+        if od and not s5:
+            inconsist["zamowienie bez pelnej sciezki S1-S5"] += 1
+        if s5 and not od:
+            inconsist["S5 bez zamowienia (np. GO z usluga)"] += 1
+        if "payment_started" in ev and not s1:
+            inconsist["platnosc bez wyboru uslugi (GO osobno)"] += 1
+        prod.append(s)
+    return prod, dict(inconsist)
+
+
+def survival(ds):
+    """Kaplan-Meier czasu do 2. zamowienia + odstepy do kolejnego zamowienia (z pelnym 365-dniowym okresem)."""
+    end_dt = datetime(DATA_END.year, DATA_END.month, DATA_END.day) + timedelta(days=1)
+    obs = []
+    for p in ds.patients.values():
+        if p["ret_days"]:
+            obs.append((p["ret_days"][0], 1))
+        else:
+            obs.append(((end_dt - p["first_t"]).total_seconds() / 86400, 0))
+    obs.sort()
+    S, at_risk, i, km = 1.0, len(obs), 0, []
+    while i < len(obs):
+        t = obs[i][0]
+        d = c = 0
+        while i < len(obs) and obs[i][0] == t:
+            d += obs[i][1]
+            c += 1
+            i += 1
+        if d:
+            S *= 1 - d / at_risk
+        km.append((t, S))
+        at_risk -= c
+    gaps = []
+    for p in ds.patients.values():
+        os_ = p["orders"]
+        for j, o in enumerate(os_):
+            if o["t"] + timedelta(days=365) > end_dt:
+                continue
+            gaps.append((os_[j + 1]["t"] - o["t"]).total_seconds() / 86400 if j + 1 < len(os_) else float("inf"))
+    return km, gaps
+
+
+def km_at(km, day):
+    s = 1.0
+    for t, v in km:
+        if t > day:
+            break
+        s = v
+    return s
+
+
 def load_events():
     """session_id -> {event_name: pierwszy moment (Europe/Warsaw)}. Eventy sa bez duplikatow (KROK 1)."""
     ev = defaultdict(dict)
