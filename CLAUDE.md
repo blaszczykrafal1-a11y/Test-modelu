@@ -13,6 +13,8 @@
 - Każdy krok i jawne założenia (Explicit Assumptions) zapisujemy w `docs/output/DECISION_LOG.md`.
 - Skrypty analityczne (Python) w `docs/output/scripts/`, numerowane `NN_nazwa.py`; raporty z liczbami w `docs/output/`.
 - Środowisko: Windows, Python 3.14 **bez pandas i tzdata** — skrypty piszemy w stdlib; Europe/Warsaw liczona regułą DST UE w kodzie.
+- Od kroku 2 każda analiza ładuje dane przez `docs/output/scripts/common.py` (`Dataset` = **Clean Production**: bez duplikatów ETL, bez 22 kont TEST-QA, czas PL, identity stitching). Reguły C1–C3 w DECISION_LOG.
+- Koszt lekarza wg README: tylko `completed` + `refunded` (no-show = 0 zł, wariant z no-show tylko jako wrażliwość).
 - Surowe dane w `docs/input/dane/` (CSV, ignorowane przez git — nie commitować). Opis schematu: `docs/input/dane/README.md`.
 
 **Tabele:** `users`, `sessions_*` (UTC), `events_*` (UTC, lejek 5 kroków), `orders`, `go_memberships` (czas PL), `marketing_spend` (dzień PL, tylko kampanie CPC).

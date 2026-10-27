@@ -58,3 +58,6 @@ docs/input/*
 *credentials*.json
 *secrets*.json
 *-serviceaccount.json
+
+# Python
+__pycache__/

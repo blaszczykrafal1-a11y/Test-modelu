@@ -154,3 +154,133 @@ Format wpisu: kontekst → co sprawdziliśmy → wynik (twarde liczby) → decyz
 2. **CAC per kanał** na atrybucji FT-stitched vs LT; payback.
 3. **Retencja kohortowa** (M+1…M+12) z wykluczeniem kont testowych, przed i po starcie kampanii L4.
 4. **TelemediGO:** kanibalizacja (rabat 50% u internisty vs 89 zł opłaty), skok osobnych zakupów w 2025-09.
+
+---
+
+## KROK 2 - Unit economics: P&L zamówienia i pacjenta (2026-10-27)
+
+**Skrypty:** `docs/output/scripts/common.py` (dataset Clean Production, wspólny dla kroków 2+), `docs/output/scripts/02_unit_economics.py`
+**Raport:** `docs/output/02_unit_economics_report.md` · **metryki:** `docs/output/02_unit_economics_metrics.json`
+
+### 2.0 Twarde reguły czyszczenia - dataset „Clean Production” (obowiązują od kroku 2)
+
+| # | reguła | efekt |
+|---|---|---|
+| C1 | Deduplikacja `orders` po `order_id` (okno ETL 2026-06-10…24). | −604 wiersze |
+| C2 | **Wykluczamy wszystkie zamówienia 22 kont, które kiedykolwiek użyły `TEST-QA`**: 1,781 TEST-QA + 290 pozostałych. Raportujemy je osobno jako anomalię. | −2,071 → **63,207 zamówień, 40,918 pacjentów** |
+| C3 | Wszystkie daty w Europe/Warsaw; atrybucja po identity stitchingu (visitor_id → user_id wstecz). | - |
+
+**Odstępstwo od briefu (C2):** brief mówił o wycięciu 1,781 zamówień TEST-QA. Te same 22 konta mają jeszcze 290 zamówień: wszystkie po 89 zł, bez rabatu, 100% `refunded` (zwrot 89 zł), czyli test ścieżki płatność → zwrot. To nie są pacjenci, więc wycinamy 2,071 (zgodnie z A4 z kroku 1).
+
+**Odstępstwo od briefu (koszt lekarza):** brief zakładał koszt lekarza także dla no-show. README mówi wprost: „Za `cancelled` i `no_show` kosztu lekarza nie ma”. Liczymy według README; wariant z no-show raportujemy jako wrażliwość: CM1 niższe o 28,875 zł (R1) i 47,500 zł (R2). Wniosków to nie zmienia.
+
+### 2.1 Anomalia: konta TEST-QA
+
+- Profil skryptu QA: 100% wejście bezpośrednie na `/konto`, desktop/Chrome, 1 visitor_id na konto, chat, wizyta 1 min, internista, godziny 9-17 w dni robocze (37% w poniedziałki), brak ocen. Konta mają 2,093 sesji zalogowanych i 0 anonimowych.
+- Rośnie w czasie: 4 zamówienia / 1 konto w 2024-10 → 156 / 22 konta w 2026-06. Nowe konta QA dochodzą co 1-3 miesiące (ostatnie: 2026-02).
+- **Scenariusz A (błąd wykluczenia z hurtowni, lekarz nieopłacony):** wpływ tylko na raportowanie (+2,071 zamówień, +22 „pacjentów”), CM1 +1,781 zł.
+- **Scenariusz B (realny wyciek):** koszt lekarza 51,775 zł (2,071 × 25 zł, bo `refunded` też jest płatne) → CM1 **−49,994 zł**, obecnie ok. 3-4 tys. zł/mies. i rośnie.
+- Dane nie rozstrzygają: `started_at` jest wypełnione (za B), ale wizyta 1-min na czacie to raczej automat (za A). **Do potwierdzenia eksportem rozliczeń z lekarzami.**
+
+### 2.2 Kaskada marży R1 vs R2 (Clean Production)
+
+| pozycja [PLN] | Rok 1 | Rok 2 | YoY | /zam. R1 | /zam. R2 |
+|---|---|---|---|---|---|
+| Gross Revenue | 2,523,464 | 3,903,771 | +54.7% | 102.10 | 101.42 |
+| − Rabaty promo | 20,220 | 136,760 | **+576%** | 0.82 | 3.55 |
+| − Rabaty GO | 128,516 | 258,813 | +101% | 5.20 | 6.72 |
+| = Billed | 2,374,728 | 3,508,198 | +47.7% | 96.08 | 91.14 |
+| − Zwroty cancelled | 98,577 | 141,323 | +43% | 3.99 | 3.67 |
+| − Zwroty po wizycie (refunded) | 45,884 | 138,532 | **+202%** | 1.86 | 3.60 |
+| + Opłaty GO | 156,551 | 219,652 | +40% | 6.33 | 5.71 |
+| = Net Revenue | 2,386,817 | 3,447,994 | +44.5% | 96.57 | 89.58 |
+| − Lekarz (completed + refunded) | 1,175,700 | 1,734,825 | +47.6% | 47.57 | 45.07 |
+| = **CM1** | 1,211,117 | 1,713,169 | **+41.5%** | 49.00 | 44.51 |
+| − Paid media | 367,632 | 649,675 | +76.7% | 14.87 | 16.88 |
+| − Afiliacja | 10,925 | 10,125 | −7% | 0.44 | 0.26 |
+| = **CM2** | 832,560 | 1,053,369 | **+26.5%** | **33.69** | **27.37** |
+
+- Zamówienia +55.7%, CM2 tylko +26.5%. **CM2 na zamówienie spada o 19%** (33.69 → 27.37 zł), CM2 % gross z 33.0% do 27.0%.
+- Miesięcznie: CM2/zamówienie ok. 31-35 zł przez cały R1 → spadek od 2026-02 → **22.08 zł we wrześniu 2026** (−35% vs R1). Erozja przyspiesza, nie wyhamowuje.
+- Most CM2 (+220,809 zł): przyrost gross +1.38 mln zjadają: paid media −282k, rabaty −247k (promo −117k, GO −130k), zwroty −135k (w tym po wizycie −93k), koszt lekarza proporcjonalnie do wolumenu.
+
+### 2.3 Kody rabatowe i L4 - weryfikacja hipotezy usera
+
+**Hipoteza usera:** kampanie „szybkie L4” przyciągają pacjentów, którym lekarz odmawia L4 → zwrot po odbytej wizycie → **ujemne CM1**.
+
+| kod | zam. | CM1/zam. | % refunded | pacjenci (1. zam.) | CAC FT | CM2 1. zam. | CM2 180d | % powrót 180d |
+|---|---|---|---|---|---|---|---|---|
+| brak kodu | 43,957 | 48.26 | 2.5% | 29,767 | 24.16 | 23.90 | 50.95 | 26.4% |
+| **L4SZYBKO20** | 3,511 | **29.19** | **14.4%** | 3,511 | 32.35 | **−3.15** | 2.82 | **4.9%** |
+| **TIKTOK25** | 1,665 | **26.35** | **13.5%** | 1,665 | 37.73 | **−11.38** | **−8.05** | **3.9%** |
+| START10 | 3,386 | 38.37 | 3.2% | 3,386 | 24.71 | 13.66 | 40.06 | 24.9% |
+| RANKING10 | 595 | 37.48 | 2.5% | 595 | 17.21 | 20.28 | 34.84 | 17.4% |
+| GO (rabat GO) | 9,738 | 11.87 | 1.7% | 1,994 | 24.46 | 77.30* | 89.01* | 41.9% |
+
+\* CM1 pacjenta zawiera opłatę GO 89 zł.
+
+**Werdykt: mechanizm POTWIERDZONY, ale wniosek o ujemnym CM1 OBALONY.**
+- Mechanizm: L4 u internisty w R2 ma 16.0% zwrotów z kodem L4 vs 8.3% bez kodu (n = 4,278 vs 5,582). Na celach innych niż L4 te same kody mają 0-3% zwrotów, więc problemem jest konkretnie odmowa zwolnienia.
+- CM1 na zamówienie z L4SZYBKO20 jest **dodatnie: +29.19 zł**. Pojedyncze zwrócone zamówienie to −33.96 zł, ale stanowi tylko 14% zamówień; odbyte dają +40.82 zł. Różnica vs brak kodu (−19 zł/zam.) to głównie **rabat (20.00 zł/zam.)**, a dopiero potem zwroty (14.60 vs 6.84 zł/zam.).
+- **Prawdziwy problem to CM2 i retencja:** CAC 32-38 zł vs 24 zł, powrót w 180 dni 4-5% vs 26%. Pacjent z kodu L4 przychodzi po jedno zwolnienie i nie wraca.
+- **Ile przepaliliśmy na kodach L4 (5,176 pacjentów):** rabaty 111,845 zł + zwroty po wizycie 54,905 zł + lekarz za zwrócone wizyty 23,900 zł = **190,650 zł wycieku**. CAC 176,387 zł zjada całe CM1 tych pacjentów (157,838 zł) → **masa CM2 −18,549 zł**. Netto ta akwizycja nie zarobiła złotówki.
+- 70% zamówień z L4SZYBKO20 przychodzi z `meta_prosp_l4_szybko`, 72% TIKTOK25 z `tt_prosp_l4_15min`.
+
+### 2.4 Kanały: First-Touch (stitched) vs Last-Touch
+
+| kanał FT | pacjenci | CAC | CM2 1. zam. | CM2 180d | CM2 365d (kohorta R1) | % powrót 180d | masa CM2 FT | masa CM2 LT |
+|---|---|---|---|---|---|---|---|---|
+| seo | 7,362 | 0 | 50.90 | 78.64 | 89.69 | 28.5% | 609,911 | 603,577 |
+| direct | 6,541 | 0 | 51.09 | 78.89 | 88.24 | 29.2% | 543,955 | 539,093 |
+| google_cpc | 15,122 | 42.07 | 7.06 | 32.71 | 39.66 | 27.2% | 527,720 | 533,335 |
+| referral | 1,210 | 0 | 51.22 | 80.47 | 90.51 | 30.2% | 102,763 | 101,850 |
+| meta | 7,311 | 40.86 | −0.82 | 11.15 | 22.74 | 14.1% | 56,797 | 66,425 |
+| affiliate | 1,213 | 17.35 | 29.38 | 43.43 | 45.57 | 19.3% | 54,806 | 53,754 |
+| **tiktok** | 2,159 | 38.20 | **−6.19** | **−3.61** | - (tylko R2) | **3.1%** | **−10,022** | −12,104 |
+
+Kampanie (FT), które **nie spłacają się nigdy w obserwowanym oknie**:
+- `gs_generic_specjalisci`: CAC 57.79, CM1 1. zamówienia tylko 22.16 (specjaliści mają strukturalnie niskie CM1, patrz 2.5) → CM2 365d **−13.66 zł/pacjenta**, masa −25,944 zł.
+- `tt_prosp_l4_15min`: CM2 180d −3.61, powrót 3.1%, masa −10,022 zł.
+- `meta_prosp_l4_szybko`: CM2 180d **+7.79**, ledwo nad kreską (powrót 5.5%).
+
+Spłacają się po kolejnych wizytach (pod wodą lub ~0 na 1. zamówieniu, dodatnie w 180-365 dni): `gs_generic_lekarz_online` (−0.11 → +28.61), `gs_generic_erecepta` (−0.22 → +50.05), `meta_prosp_lekarz_online` (−4.92 → +20.07).
+
+**Meta zmieniła charakter:** pacjenci FT z Meta 1,144 (R1) → 6,167 (R2), CM1 1. zamówienia 51.95 → 37.84 zł. Wzrost Meta to prawie w całości kampania L4.
+
+**FT vs LT:** LT przenosi masę CM2 do kanałów bezkosztowych (direct +117k, seo +62k) i zaniża google_cpc (−123k) oraz meta (−28k vs FT). Na LT płatne kanały wyglądają gorzej, niż są. Wniosek o tiktok/L4 nie zależy od modelu atrybucji.
+
+### 2.5 TelemediGO
+
+| | Rok 1 | Rok 2 |
+|---|---|---|
+| członkostwa (w tym kupione osobno) | 1,759 (225) | 2,468 (461) |
+| opłaty GO | 156,551 | 219,652 |
+| rabaty GO udzielone | 128,516 | 258,813 |
+| **opłaty − rabaty** | **+28,035** | **−39,161** |
+| CM1 wizyt GO (bez opłat) | 37,153 | 78,416 |
+
+- **Sam program już nie pokrywa rabatów:** w R2 rabaty przekraczają opłaty o 39 tys. zł. Zamknięte członkostwa (1,759): średnio 2.79 wizyty GO, opłata − rabaty = **−21.94 zł/członkostwo**, 39.9% członkostw dało rabaty > 89 zł.
+- Z kosztem lekarza członkostwo nadal jest dodatnie na CM1: opłata + CM1 wizyt GO = **+121.76 zł/członkostwo**, bo internista z rabatem 50% to 44.50 − 25 = +19.50 zł.
+- **Specjaliści na GO są pod wodą:** CM1/wizyta z rabatem GO: dermatolog/kardiolog/neurolog/urolog −12.80, pediatra −24.00, psycholog −20.80, ginekolog/endokrynolog −4.80. **Pediatra (−5.00) i psycholog (−1.00) są pod wodą nawet bez żadnego rabatu.** To problem cennika, niezależny od GO.
+- Retencja (kohorta R1, 365 dni, 1. wizyta u internisty): GO przy 1. zamówieniu → 2.37 zam./pacjenta, 45.1% powrotu, CM1 123.77 zł; bez GO → 1.71, 27.4%, 93.55 zł. **Uwaga: samoselekcja.** To górna granica efektu GO, nie dowód przyczynowy.
+- **Wrzesień 2025:** 225 osobnych zakupów GO, **100% z sesji e-mail `crm_go_upsell`** (start kampanii: 317 sesji vs ok. 50/mies. później), 100% kupujących to istniejący pacjenci, 0% miało wcześniej GO. To jednorazowy blast CRM do bazy, nie organiczny popyt. Efekt: 40% nigdy nie użyło GO; opłaty 20,025 zł vs rabaty 18,612 zł; CM1 wizyt +5,764 zł. Lekko na plus, ale **zawyżyło CM1 R1 we wrześniu 2025 (55.24 zł/zam. vs ~48 normalnie)**, czyli upiększyło bazę porównania YoY.
+
+### 2.6 Jawne założenia kroku 2
+
+| # | założenie | uzasadnienie / ryzyko |
+|---|---|---|
+| A10 | Koszt lekarza: 25 zł internista, 200 zł psychiatra, 100 zł pozostali; tylko `completed` + `refunded`. | README. No-show jako wrażliwość. |
+| A11 | Opłaty GO (89 zł) to przychód w miesiącu zakupu, bez zwrotów; w P&L pacjenta wliczone do jego CM1. | Brak danych o zwrotach GO. |
+| A12 | Prowizja afiliacyjna 25 zł naliczana, gdy sesja 1. opłaconego zamówienia pacjenta ma `utm_medium = affiliate` (842 pacjentów = 21,050 zł). | README nie mówi, jaki model atrybucji stosuje partner; po FT byłoby 1,213 × 25 zł. |
+| A13 | **Cały koszt CPC i afiliacji obciąża pozyskanie nowych pacjentów.** CAC = koszt puli (kampania × miesiąc kohorty) / nowi pacjenci przypisani do tej puli (FT lub LT). 0 zł nieprzypisane. | Konserwatywne dla CAC: brand i retargeting częściowo obsługują powracających, więc CAC brandu/rmkt jest zawyżony, a reszty lekko zaniżony. |
+| A14 | Organic, direct, referral, e-mail, SMS = 0 zł kosztu pozyskania. | README: koszt pomijalny / brak w danych. Brak kosztów SEO/CRM, więc ich CM2 jest zawyżone. |
+| A15 | LTV porównujemy w równych oknach: 180 dni (1. zamówienie ≤ 2026-04-03) i 365 dni (kohorta R1). „Masa CM2” = cały obserwowany okres (różne okna, tylko jako suma). | Kampanie L4/TikTok startują w R2, więc nie mają okna 365 dni. |
+| A16 | Rabat = `list_price − amount_paid`; Net Revenue = Billed − `refund_amount` + opłaty GO. | Spójne z danymi (0 naruszeń w kroku 1). |
+
+### 2.7 Wnioski kroku 2 → co dalej
+
+1. **Wzrost jest realny w przychodzie, ale jakość jednostki spada:** CM2/zamówienie −19% YoY i −35% we wrześniu 2026 vs średnia R1. Masa CM2 rośnie (+26.5%), ale wolniej niż wolumen, a trend miesięczny jest spadkowy.
+2. **Najgorsze źródło to nie zwroty, tylko kampanie L4 i TikTok:** dodatnie CM1, ujemne lub zerowe CM2 i retencja 3-5%. To kupowanie jednorazowych transakcji.
+3. **Strukturalna dziura cenowa u specjalistów** (pediatra, psycholog < 0 nawet bez rabatu; GO i promo pogłębiają) i kampania `gs_generic_specjalisci`, która nigdy się nie spłaca.
+4. **GO w R2 przestało pokrywać własne rabaty** (−39k), ale broni się na CM1 i prawdopodobnie retencją. Do sprawdzenia kauzalnie.
+5. Kolejny krok (proponowany): **retencja kohortowa M+1…M+12** per kanał/kod/GO i test „czy pacjenci L4 kiedykolwiek wracają po innej usłudze”; potem rekomendacje budżetowe (realokacja L4/TikTok → gs_generic_erecepta / brand / SEO).
