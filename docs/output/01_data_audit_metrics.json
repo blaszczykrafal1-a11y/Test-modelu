@@ -1,0 +1,552 @@
+{
+  "rows": {
+    "sessions (8 plikow)": 459557,
+    "events (5 plikow)": 494605,
+    "orders": 65882,
+    "users": 52422,
+    "go_memberships": 4227,
+    "marketing_spend": 5676
+  },
+  "duplicates": {
+    "sessions.session_id": {
+      "keys_dup": 0,
+      "extra_rows": 0,
+      "exact_dup_keys": 0
+    },
+    "events (session_id, event_name, event_at_utc)": {
+      "keys_dup": 0,
+      "extra_rows": 0,
+      "exact_dup_keys": 0
+    },
+    "events (session_id, event_name)": {
+      "keys_dup": 0,
+      "extra_rows": 0,
+      "exact_dup_keys": 0
+    },
+    "orders.order_id": {
+      "keys_dup": 604,
+      "extra_rows": 604,
+      "exact_dup_keys": 604
+    },
+    "orders (user_id, created_at)": {
+      "keys_dup": 604,
+      "extra_rows": 604,
+      "exact_dup_keys": 604
+    },
+    "orders.session_id": {
+      "keys_dup": 604,
+      "extra_rows": 604,
+      "exact_dup_keys": 604
+    },
+    "users.user_id": {
+      "keys_dup": 0,
+      "extra_rows": 0,
+      "exact_dup_keys": 0
+    },
+    "go_memberships.membership_id": {
+      "keys_dup": 0,
+      "extra_rows": 0,
+      "exact_dup_keys": 0
+    },
+    "marketing_spend (date, source, medium, campaign)": {
+      "keys_dup": 0,
+      "extra_rows": 0,
+      "exact_dup_keys": 0
+    }
+  },
+  "tz_test": {
+    "orders.created_at": {
+      "tested": 65278,
+      "= offset PL (CET/CEST)": 65278,
+      "no_event": 0,
+      "multi_event": 0
+    },
+    "go_memberships.purchased_at": {
+      "tested": 4227,
+      "= offset PL (CET/CEST)": 4227,
+      "no_event": 0,
+      "multi_event": 0
+    },
+    "users.registered_at": {
+      "= offset PL": 52422
+    },
+    "marketing_spend vs sessions (dzien UTC)": {
+      "corr": 0.9952,
+      "mae": 9.17,
+      "sessions_per_click": 0.841
+    },
+    "marketing_spend vs sessions (dzien Europe/Warsaw)": {
+      "corr": 0.9955,
+      "mae": 9.12,
+      "sessions_per_click": 0.841
+    }
+  },
+  "night_shift": {
+    "sessions_total": 459557,
+    "sessions_night_22_02": 40640,
+    "sessions_day_shift": 9497,
+    "sessions_month_shift": 299,
+    "orders_total": 65278,
+    "orders_night_22_02": 6121,
+    "orders_day_shift": 1594,
+    "orders_month_shift": 51,
+    "orders_naive_join_day_mismatch": 1687,
+    "first_order_cohort_day_shift": 1302,
+    "first_order_cohort_month_shift": 43
+  },
+  "identity": {
+    "visitors": 365078,
+    "visitors_ever_logged": 57495,
+    "visitors_multi_user": 0,
+    "users_in_sessions": 52422,
+    "user_visitor_dist": {
+      "1": 48587,
+      "4": 193,
+      "2": 2961,
+      "3": 605,
+      "5": 76
+    },
+    "users_with_pre_login_anon": 14096,
+    "pre_login_anon_sessions": 14096,
+    "median_lag_days": 1.2,
+    "anon_sessions": 354726,
+    "anon_sessions_of_known_visitor": 15608,
+    "paying_users": 40940,
+    "paying_visitors": 45495,
+    "repeat_orders_on_new_visitor": 4555
+  },
+  "attribution": {
+    "n": 40940,
+    "lt": {
+      "google_cpc": 13280,
+      "direct": 9366,
+      "referral": 884,
+      "seo": 7682,
+      "meta": 7293,
+      "affiliate": 842,
+      "tiktok": 1593
+    },
+    "ft_logged": {
+      "google_cpc": 13637,
+      "direct": 8938,
+      "referral": 954,
+      "seo": 7569,
+      "meta": 7258,
+      "affiliate": 913,
+      "tiktok": 1671
+    },
+    "ft_stitched": {
+      "google_cpc": 15122,
+      "direct": 6563,
+      "referral": 1210,
+      "seo": 7362,
+      "meta": 7311,
+      "affiliate": 1213,
+      "tiktok": 2159
+    },
+    "ft_ne_lt": 9044,
+    "ft_stitched_ne_ft_logged": 7461
+  },
+  "integrity": {
+    "orders_no_session_id": 0,
+    "orders_session_missing": 0,
+    "orders_user_mismatch": 0,
+    "orders_no_payment_event": 0,
+    "orders_user_missing": 0,
+    "orders_before_registration": 0,
+    "orders_before_session": 0,
+    "events_orphan": 0,
+    "events_before_session": 0,
+    "sessions_no_events": 297524,
+    "payment_success_without_tx": 0,
+    "funnel_violations": {}
+  },
+  "business_checks": {},
+  "go_checks": {
+    "bad_validity": 0,
+    "overlap": 0,
+    "bad_order_ref": 0
+  },
+  "test_accounts": {
+    "users": [
+      "101265",
+      "105165",
+      "105528",
+      "105941",
+      "106508",
+      "106652",
+      "109380",
+      "111718",
+      "112849",
+      "113520",
+      "119132",
+      "123277",
+      "123465",
+      "124534",
+      "124536",
+      "125430",
+      "126254",
+      "129955",
+      "130848",
+      "132676",
+      "148190",
+      "150193"
+    ],
+    "test_qa_orders": 1781,
+    "all_orders_of_test_users": 2071
+  },
+  "orders_dup_window": {
+    "from": "2026-06-10",
+    "to": "2026-06-24",
+    "dups": 604,
+    "unique_in_window": 1679
+  },
+  "spikes": [
+    {
+      "metric": "orders_promo",
+      "date": "2025-05-08",
+      "value": 15,
+      "median": 5,
+      "ratio": 3.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-01-05",
+      "value": 18,
+      "median": 6,
+      "ratio": 3.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-07-22",
+      "value": 17,
+      "median": 6,
+      "ratio": 2.83
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-11-03",
+      "value": 27,
+      "median": 10,
+      "ratio": 2.7
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-03-31",
+      "value": 21,
+      "median": 8,
+      "ratio": 2.62
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2024-12-11",
+      "value": 15,
+      "median": 6,
+      "ratio": 2.5
+    },
+    {
+      "metric": "go_purchases",
+      "date": "2026-01-26",
+      "value": 17,
+      "median": 7,
+      "ratio": 2.43
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2025-08-26",
+      "value": 12,
+      "median": 5,
+      "ratio": 2.4
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2025-03-06",
+      "value": 12,
+      "median": 5,
+      "ratio": 2.4
+    },
+    {
+      "metric": "go_purchases",
+      "date": "2026-09-01",
+      "value": 12,
+      "median": 5,
+      "ratio": 2.4
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-09-16",
+      "value": 14,
+      "median": 6,
+      "ratio": 2.33
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-09-02",
+      "value": 14,
+      "median": 6,
+      "ratio": 2.33
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-06-09",
+      "value": 14,
+      "median": 6,
+      "ratio": 2.33
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-04-28",
+      "value": 14,
+      "median": 6,
+      "ratio": 2.33
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-01-06",
+      "value": 14,
+      "median": 6,
+      "ratio": 2.33
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-03-13",
+      "value": 16,
+      "median": 7,
+      "ratio": 2.29
+    },
+    {
+      "metric": "go_purchases",
+      "date": "2025-09-16",
+      "value": 25,
+      "median": 11,
+      "ratio": 2.27
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2025-02-05",
+      "value": 11,
+      "median": 5,
+      "ratio": 2.2
+    },
+    {
+      "metric": "go_purchases",
+      "date": "2025-07-02",
+      "value": 11,
+      "median": 5,
+      "ratio": 2.2
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-05-12",
+      "value": 13,
+      "median": 6,
+      "ratio": 2.17
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2024-12-23",
+      "value": 13,
+      "median": 6,
+      "ratio": 2.17
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2025-11-12",
+      "value": 13,
+      "median": 6,
+      "ratio": 2.17
+    },
+    {
+      "metric": "go_purchases",
+      "date": "2026-03-30",
+      "value": 15,
+      "median": 7,
+      "ratio": 2.14
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-09-25",
+      "value": 17,
+      "median": 8,
+      "ratio": 2.12
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-10-27",
+      "value": 19,
+      "median": 9,
+      "ratio": 2.11
+    },
+    {
+      "metric": "go_purchases",
+      "date": "2025-09-18",
+      "value": 23,
+      "median": 11,
+      "ratio": 2.09
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-09-08",
+      "value": 16,
+      "median": 8,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-09-03",
+      "value": 14,
+      "median": 7,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-08-18",
+      "value": 14,
+      "median": 7,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-08-14",
+      "value": 14,
+      "median": 7,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-08-04",
+      "value": 12,
+      "median": 6,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-06-13",
+      "value": 12,
+      "median": 6,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-05-14",
+      "value": 12,
+      "median": 6,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2025-04-21",
+      "value": 12,
+      "median": 6,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2024-12-09",
+      "value": 12,
+      "median": 6,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_promo",
+      "date": "2024-10-29",
+      "value": 10,
+      "median": 5,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2026-01-26",
+      "value": 16,
+      "median": 8,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2025-10-28",
+      "value": 12,
+      "median": 6,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2025-04-23",
+      "value": 10,
+      "median": 5,
+      "ratio": 2.0
+    },
+    {
+      "metric": "orders_cancel_refund",
+      "date": "2025-04-16",
+      "value": 10,
+      "median": 5,
+      "ratio": 2.0
+    }
+  ],
+  "yoy": {
+    "sessions": {
+      "y1": 162909,
+      "y2": 296648
+    },
+    "distinct_visitors": {
+      "y1": 128954,
+      "y2": 239346
+    },
+    "registrations": {
+      "y1": 20640,
+      "y2": 31782
+    },
+    "orders_raw": {
+      "y1": 25269,
+      "y2": 40613
+    },
+    "orders_dedup": {
+      "y1": 25269,
+      "y2": 40009
+    },
+    "orders_dedup_no_test": {
+      "y1": 24716,
+      "y2": 38491
+    },
+    "orders_not_cancelled": {
+      "y1": 24239,
+      "y2": 38467
+    },
+    "orders_completed": {
+      "y1": 23081,
+      "y2": 35637
+    },
+    "orders_refunded_or_cancelled_no_test": {
+      "y1": 1522,
+      "y2": 3168
+    },
+    "paying_users": {
+      "y1": 16251,
+      "y2": 26470
+    },
+    "new_paying_users": {
+      "y1": 16251,
+      "y2": 24689
+    },
+    "new_paying_users_no_test": {
+      "y1": 16231,
+      "y2": 24687
+    },
+    "returning_users_from_y1": {
+      "y1": 0,
+      "y2": 1781
+    },
+    "revenue_net_pln": {
+      "y1": 2230744.5,
+      "y2": 3229645.4
+    },
+    "go_purchases": {
+      "y1": 1759,
+      "y2": 2468
+    },
+    "spend_pln": {
+      "y1": 367632.25,
+      "y2": 649675.06
+    }
+  }
+}

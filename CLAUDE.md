@@ -2,8 +2,20 @@
 
 ## Project Overview
 
-<!-- Wypełnij po zduplikowaniu template -->
-<!-- Co robi ten projekt, jaki ma cel, jakie narzędzia/API używa -->
+**telemedi-growth-audit** — audyt wzrostu sprzedaży online konsultacji Telemedi B2C (pacjenci), okres 2024-10-01 – 2026-09-30.
+
+**Pytanie badawcze:** oficjalny dashboard raportuje +40–60% YoY (+52% pacjentów). Czy to realny, zdrowy wzrost (nowi pacjenci + zdrowa retencja + dodatnia marża jednostkowa), czy iluzja napędzana błędami w danych, przepalaniem budżetu reklamowego, kodami rabatowymi, TelemediGO albo ukrytymi kosztami lekarzy na zwrotach / no-show?
+
+**Role:** user = Growth Manager; Claude = Lead Data & Analytics Engineer.
+
+**Zasady pracy:**
+- Nie przytakujemy w ciemno — każdą hipotezę weryfikujemy w kodzie, szukamy dziur w danych, proponujemy kontr-hipotezy.
+- Każdy krok i jawne założenia (Explicit Assumptions) zapisujemy w `docs/output/DECISION_LOG.md`.
+- Skrypty analityczne (Python) w `docs/output/scripts/`, numerowane `NN_nazwa.py`; raporty z liczbami w `docs/output/`.
+- Środowisko: Windows, Python 3.14 **bez pandas i tzdata** — skrypty piszemy w stdlib; Europe/Warsaw liczona regułą DST UE w kodzie.
+- Surowe dane w `docs/input/dane/` (CSV, ignorowane przez git — nie commitować). Opis schematu: `docs/input/dane/README.md`.
+
+**Tabele:** `users`, `sessions_*` (UTC), `events_*` (UTC, lejek 5 kroków), `orders`, `go_memberships` (czas PL), `marketing_spend` (dzień PL, tylko kampanie CPC).
 
 ## Project Structure
 
@@ -116,11 +128,13 @@ Claude: [Creates skill with safe name]
 
 ## User Notifications
 
-When user explicitly requests a notification by saying **"daj powiadomienie"** (give notification), trigger a macOS alert using:
+When user explicitly requests a notification by saying **"daj powiadomienie"** (give notification), trigger a Windows alert using:
 
-```bash
-osascript -e 'display alert "Claude Code" message "Zadanie zakończone - Claude czeka na Ciebie" giving up after 3' && afplay /System/Library/Sounds/Glass.aiff
+```powershell
+powershell -Command "[System.Media.SystemSounds]::Asterisk.Play(); Add-Type -AssemblyName PresentationFramework; [System.Windows.MessageBox]::Show('Zadanie zakonczone - Claude czeka na Ciebie', 'Claude Code')"
 ```
+
+Okno MessageBox jest modalne i czeka na klikniecie OK, więc Claude odpala je w tle (`run_in_background`), żeby nie blokować sesji.
 
 ### When to Show Notifications
 
@@ -140,10 +154,10 @@ Notifications are manual (not automatic) because:
 
 ### Notification Behavior
 
-- **Type**: Modal alert dialog (not Notification Center)
-- **Duration**: Auto-dismisses after 3 seconds
-- **Sound**: Glass.aiff plays separately
-- **Focus mode**: Bypasses "Do Not Disturb" mode
+- **Type**: Modal WPF MessageBox (nie Windows Toast / Action Center)
+- **Duration**: Zostaje na ekranie do kliknięcia OK (brak auto-zamknięcia)
+- **Sound**: systemowy dźwięk Asterisk
+- **Focus mode**: MessageBox pojawia się także przy włączonym Focus Assist
 - **Use case**: Long-running tasks, deployments, validations where user wants to be notified upon completion
 
 ## Status Line Configuration
