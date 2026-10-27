@@ -123,7 +123,7 @@ class Dataset:
             self.sessions[r["session_id"]] = {
                 "sid": r["session_id"], "visitor": r["visitor_id"], "user": r["user_id"],
                 "utc": utc, "t": utc_to_waw(utc), "src": r["utm_source"], "med": r["utm_medium"],
-                "camp": r["utm_campaign"], "device": r["device"], "browser": r["browser"],
+                "camp": r["utm_campaign"], "device": r["device"], "os": r["os"], "browser": r["browser"],
                 "landing": r["landing_page"], "channel": channel(r["utm_source"], r["utm_medium"]),
             }
 
@@ -163,7 +163,8 @@ class Dataset:
             "mode": r["consultation_mode"], "status": st, "disc_type": r["discount_type"],
             "code": r["promo_code"], "gross": lp, "discount": lp - paid, "billed": paid, "refund": refund,
             "net": paid - refund, "doctor": doc, "cm1": paid - refund - doc,
-            "duration": r["duration_min"], "started": r["started_at"],
+            "duration": r["duration_min"], "started": r["started_at"], "scheduled": r["scheduled_at"],
+            "payment": r["payment_method"], "rating": r["rating"],
         }
 
     # -- identity stitching ------------------------------------------------------
@@ -208,6 +209,43 @@ class Dataset:
     def cost_key(s):
         """Klucz puli kosztowej: kampania platna albo kanal."""
         return s["camp"] if s["med"] in PAID_MEDIA else s["channel"]
+
+    def is_test_session(self, s):
+        return self.stitched_user(s) in self.test_users
+
+
+def compute_cac(ds):
+    """Pule kosztow (kampania x miesiac kohorty; afiliacja 25 zl za 1. zamowienie z sesji afiliacyjnej, A12)
+    rozdzielone rowno na nowych pacjentow przypisanych do puli (A13). Ustawia p['cac_ft'] i p['cac_lt']."""
+    pool = defaultdict(float)
+    for r in ds.spend:
+        pool[(r["camp"], month(r["date"]))] += r["spend"]
+    aff_lt = [p for p in ds.patients.values() if p["lt_channel"] == "affiliate"]
+    aff_ft = [p for p in ds.patients.values() if p["ft_channel"] == "affiliate"]
+    for p in aff_lt:
+        pool[("affiliate", p["cohort"])] += AFFILIATE_FEE
+    unalloc = {}
+    for key_field in ("ft_key", "lt_key"):
+        cnt = defaultdict(int)
+        for p in ds.patients.values():
+            cnt[(p[key_field], p["cohort"])] += 1
+        unalloc[key_field] = sum(v for k, v in pool.items() if cnt.get(k, 0) == 0)
+        for p in ds.patients.values():
+            k = (p[key_field], p["cohort"])
+            p["cac_" + key_field[:2]] = pool.get(k, 0.0) / cnt[k]
+    return {"pool": pool, "unalloc_ft": unalloc["ft_key"], "unalloc_lt": unalloc["lt_key"],
+            "aff_lt": aff_lt, "aff_ft": aff_ft}
+
+
+def load_events():
+    """session_id -> {event_name: pierwszy moment (Europe/Warsaw)}. Eventy sa bez duplikatow (KROK 1)."""
+    ev = defaultdict(dict)
+    for r in _read_parts("events_*.csv"):
+        t = utc_to_waw(dt(r["event_at_utc"]))
+        d = ev[r["session_id"]]
+        if r["event_name"] not in d or t < d[r["event_name"]]:
+            d[r["event_name"]] = t
+    return ev
 
 
 # ---------------------------------------------------------------------------

@@ -284,3 +284,137 @@ Spłacają się po kolejnych wizytach (pod wodą lub ~0 na 1. zamówieniu, dodat
 3. **Strukturalna dziura cenowa u specjalistów** (pediatra, psycholog < 0 nawet bez rabatu; GO i promo pogłębiają) i kampania `gs_generic_specjalisci`, która nigdy się nie spłaca.
 4. **GO w R2 przestało pokrywać własne rabaty** (−39k), ale broni się na CM1 i prawdopodobnie retencją. Do sprawdzenia kauzalnie.
 5. Kolejny krok (proponowany): **retencja kohortowa M+1…M+12** per kanał/kod/GO i test „czy pacjenci L4 kiedykolwiek wracają po innej usłudze”; potem rekomendacje budżetowe (realokacja L4/TikTok → gs_generic_erecepta / brand / SEO).
+
+---
+
+## KROK 3 - Kohorty dzienne, lejek, ukryte zdarzenia, wycena dźwigni (2026-10-27)
+
+**Skrypt:** `docs/output/scripts/03_cohorts_and_funnels.py` (+ `common.py`: `load_events()`, `compute_cac()` wydzielone z kroku 2; raport kroku 2 po refaktorze sprawdzony: identyczny)
+**Raport:** `docs/output/03_cohorts_and_funnels_report.md` · **metryki:** `docs/output/03_cohorts_and_funnels_metrics.json`
+
+**Korekta zakresu:** user zmienił moją propozycję (kohorty miesięczne) na kohorty dzienne + lejek + change-point detection + sizing. Zrobione w tym zakresie.
+**Odstępstwo:** „koszt lekarza per specjalizacja” nie jest w danych; to stała z README (25/100/200 zł), więc nie da się na nim wykryć zmian. Zamiast tego skanujemy czas trwania wizyty, opóźnienie startu wizyty i cenę katalogową per specjalizacja.
+**Korekta liczb z kroku 1:** CR sesja→zamówienie na Clean Production wynosi **15.2% → 13.0% (−2.18 pp)**, nie 15.5% → 13.5% (tamto było liczone na surowych danych).
+
+### 3.1 Kohorty i krzywa przeżycia
+
+| okno | pacjenci | retencja | Net Rev./pac. | CM1/pac. | CM2/pac. |
+|---|---|---|---|---|---|
+| D+7 | 40,407 | 1.6% | 93.19 | 47.97 | 22.65 |
+| D+30 | 38,877 | 9.2% | 101.83 | 52.28 | 27.18 |
+| D+90 | 35,155 | 20.9% | 120.84 | 62.00 | 37.57 |
+| D+180 | 28,822 | 25.7% | 141.98 | 72.24 | 48.86 |
+| D+365 | 16,231 | 28.7% | 167.66 | 83.57 | 60.25 |
+
+- **Krzywa przeżycia (Kaplan-Meier, 2. zamówienie):** 9.2% do D+30, 20.5% do D+90, 23.8% do D+180, 24.6% do D+365, 24.7% do D+540. **~83% wszystkich powrotów dzieje się w pierwszych 90 dniach.**
+- **Pacjent „umiera” po 120 dniach bez zamówienia:** P(kolejne zamówienie w 365 dni) spada z 41.3% (zaraz po zamówieniu) przez 18.7% (60 dni) i 9.4% (90 dni) do **4.8% po 120 dniach** i 2.0% po 180. Mediana odstępu między zamówieniami 38.9 dnia, p90 105 dni.
+- **Dlaczego „tylko 11% R1 kupiło w R2” (10.8%):** to artefakt metryki kalendarzowej, a nie załamanie retencji. 28.8% pacjentów R1 kiedykolwiek wróciło, ale 17.9% wróciło tylko w R1, bo większość wraca w ciągu 90 dni od 1. zamówienia. Kohorta 2024-10 musiałaby wrócić po 12+ miesiącach, żeby „kupić w R2” → 4.6%; kohorta 2025-09 → 26.7%. **Metryka „% bazy R1 aktywnej w R2” nie nadaje się do oceny retencji.**
+- **Retencja realnie się psuje, ale dopiero w kohortach R2:** D+90 ok. 22-27% (kohorty 2024-10…2025-10) → **14-15% (kohorty 2026-03…06)**; CM2 D+30 ok. 31-34 zł → **14-18 zł (2026-04…08)**. Idzie to krok w krok z udziałem kodów L4 w kohorcie (0% → 30%).
+
+| przekrój | ret D+90 | ret D+180 | ret D+365 | CM2 D+180 | CM2 D+365 |
+|---|---|---|---|---|---|
+| FT seo / direct / referral | 23.9-26.3% | 28.5-30.2% | 29.2-30.7% | 78.6-80.5 | 88.2-90.5 |
+| FT google_cpc | 23.6% | 27.2% | 28.6% | 32.71 | 39.66 |
+| FT meta | 10.4% | 14.1% | 26.5% (tylko R1) | 11.15 | 22.74 |
+| **FT tiktok** | **3.1%** | **3.1%** | - | **−3.61** | - |
+| kod L4 | 4.0% | 4.8% | - | 1.30 | - |
+| 1. wizyta: internista e-recepta | 32.0% | 36.8% | 38.4% | 76.54 | 89.76 |
+| 1. wizyta: internista L4 | 10.4% | 13.8% | 18.0% | 37.81 | 50.59 |
+| 1. wizyta: specjalista | 23.2% | 27.8% | 29.4% | 18.04 | 27.10 |
+| GO przy 1. zamówieniu | 35.5% | 41.9% | 45.0% | 89.01 | 92.79 |
+
+- e-recepta to najlepszy produkt wejściowy (pacjenci przewlekli: 38% powrotu w roku), L4 najgorszy (18%). Specjalista zatrzymuje pacjenta, ale ze złą marżą (CM2 D+30 −2.02).
+- **Uwaga metodologiczna:** segment „GO kupione później” ma 99.9% retencji D+365 z definicji (kupno GO po 1. zamówieniu to prawie zawsze kolejna wizyta lub sesja z bazy CRM). To odwrócona przyczynowość, nie efekt GO. Nie używać tego segmentu.
+
+### 3.2 Lejek - weryfikacja hipotezy „psuje się lejek”
+
+| rok | sesje | CR | S1 usługa | S2 termin | S3 konto | S4 start płatn. | S5 płatn. OK |
+|---|---|---|---|---|---|---|---|
+| R1 | 162,336 | 15.2% | 36.8% | 70.7% | 73.8% | 86.7% | 91.5% |
+| R2 | 295,128 | 13.0% | 33.7% | 69.3% | 71.0% | 86.3% | 91.1% |
+
+**Dekompozycja −2.18 pp (shift-share + LMDI per krok):**
+- segmenty = kanał: **miks −2.35 pp**, jakość w segmentach +0.17 pp (S1 +0.31, S2 +0.07, S3 −0.25, S4 +0.02, S5 +0.01);
+- segmenty = kanał × urządzenie × przeglądarki: **miks −2.80 pp**, jakość **+0.62 pp**.
+
+**Werdykt: hipoteza o psującym się lejku OBALONA.** Cały spadek CR (a nawet więcej) to miks ruchu: przesunięcie do Meta/TikTok, mobile i in-app. Wewnątrz segmentów konwersja lekko się poprawiła. Jedyny krok z lekkim pogorszeniem to S3 (konto). Zero awarii lejka: brak impulsów w CR i krokach lejka, sesje/klik stabilne (śledzenie się nie psuło).
+
+**In-app browsers:**
+- in-app CR 6.6% vs Chrome/Safari 16.3% (R2). Kontrolując kanał i urządzenie (Meta, Android): in-app 5.1% vs Chrome 9.6%; luka jest na wszystkich krokach, największa na S1/S2.
+- **Na TikToku in-app ≈ Chrome** (Android 4.7% vs 4.9%; iOS 5.0% vs 3.0%), a miesięczne kroki in-app są stabilne przez 24 miesiące (S3 ok. 61%, S5 ok. 88%). **Nie ma śladu technicznej awarii WebView**; luka na Meta to w dużej mierze samoselekcja (kto otwiera link w Chrome, ma wyższą intencję). Udział in-app w sesjach: 10% → **42.6%** (od 2026-04-17).
+
+**Nowe znalezisko - płatności w sesjach CRM:** sukces płatności (S5) w sesjach z e-mail/SMS wynosi **74-80%** vs 94.6% w direct, przy tej samej populacji (zalogowani, powracający pacjenci). crm_reactivation 75.7%, crm_sms_przypomnienie 76.7%, crm_recepta_przypomnienie 79.9%. To realne tarcie (deep link / webview klienta poczty / zapisana karta?); do diagnozy z zespołem płatności.
+
+### 3.3 Oś czasu - wykryte zdarzenia (binary segmentation, |t| ≥ 7, ≥ 10%; impulsy |z| ≥ 6)
+
+**Zdarzenia produktowe / CRM:**
+| data | zdarzenie | wpływ |
+|---|---|---|
+| **2025-09-08** | Start „GO osobno”: nowy landing `/telemedigo` + e-mail `crm_go_upsell` (1. zakup GO bez konsultacji tego dnia) | zakupy GO 4.6 → 7.2/dzień (CP 2025-09-05); GO osobno 11.4/dzień przez 3 tygodnie, potem **−89% od 2025-09-29** (koniec wysyłki) do 1.3/dzień |
+| 2024-10-01…2025-09 | Brak zmian cen katalogowych (10 specjalizacji, 1 cena każda przez 24 mies.) | zero zdarzeń cenowych; erozja marży to rabaty i miks, nie cennik |
+
+**Zdarzenia marketingowe:**
+| data | zdarzenie | wpływ |
+|---|---|---|
+| 2025-01-18, 2025-06-01, 2026-07-01 | Inflacja CPC `gs_generic_erecepta`: 5.24 → 5.83 → 6.77 → 7.51 zł | **+43% CPC** w 2 lata (aukcja), CAC Google rośnie niezależnie od miksu |
+| 2025-02-28 | CPC `gs_generic_l4` +14% (5.56 → 6.35) | |
+| 2025-09-01 | Budżet `gs_generic_erecepta` +25% (213 → 267 zł/dzień) | |
+| 2025-10-01 / 10-04 / 12-16 | `meta_rmkt_koszyk`: CPC +12%, spend +40%, potem +60% (22 → 35 zł/dzień) | |
+| **2025-11-03** | **Start `meta_prosp_l4_szybko`** + kod `L4SZYBKO20` (11-04) | sesje +50% (420 → 629/dzień), zamówienia +30% (72 → 94/dzień), nowi pacjenci +77% (od 11-10) |
+| 2025-11-14, 12-01, 12-17, 2026-01-05, 02-02 | Kolejne podbicia budżetu Meta L4: 66 → 151 → 225 → 280 → 453 → 574 zł/dzień | CPC Meta L4 **+20.5% od 2026-01-11** (saturacja audytorium) |
+| 2025-11-17 / 12-01 | `gs_brand`: spend +69% (40 → 68 zł/dzień), CPC +19% | brand drożeje po starcie Meta L4 (halo albo licytowanie marki) |
+| **2026-02-09** | **Start `tt_prosp_l4_15min`** + `TIKTOK25` (02-10), nowa przeglądarka TikTok | skalowanie 02-17, 03-01, 03-09, 03-17, 04-06: 54 → 405 zł/dzień; CPC +24% od 2026-03-10 |
+| 2026-03-21 / 04-15 / 04-30 | Przesunięcie budżetu z Google: CPC `gs_generic_l4` −15%, spend `gs_generic_lekarz_online` −16%, `gs_generic_l4` −33% (206 → 139 zł/dzień) | Google L4 zastąpione TikTokiem L4 |
+
+**Skutki (szeregi wynikowe):**
+| data | zmiana | interpretacja |
+|---|---|---|
+| 2025-11-15 → 2026-04-17 | udział in-app 10.4% → 17.5% → 21.6% → 26.5% → 31.9% → 37.7% → **42.6%** | skutek Meta/TikTok |
+| 2025-11-26 / 2026-02-07 | udział celu L4 19.5% → 25.7% → **34.0%** zamówień | skutek kampanii L4 |
+| **2025-11-16 / 12-19 / 2026-01-12** | **opóźnienie startu wizyty internisty 4.2 → 5.9 → 7.7 → 10.7 min** (p90 10 → 32 min), trwale | **przeciążenie lekarzy wolumenem L4**; no-show internisty stabilny (2-3%); związek ze wzrostem zwrotów L4 bez kodu - hipoteza do sprawdzenia |
+| 2026-01-26/27 | % refunded 2.2% → 4.9%; L4 u internisty 5.9% → 12.1% | **głównie miks** (udział kodów L4 6.4% → 13.1%) + realny wzrost zwrotów L4 **bez kodu** 5.8% → 7.6%; cele nie-L4 bez zmian (1.3%) |
+| 2026-01-29 / 03-25 | CM2 D+30 kohort dziennych 31.9 → 26.2 → **17.2 zł** | |
+| **2026-02-02** / 03-23 | CR sesja→zamówienie 15.9% → 13.4% → 12.1% | miks (zob. 3.2) |
+| 2026-02-05 | zgoda marketingowa 63.6% → 53.3%, wiek 37.7 → 33.8 | **miks**, nie zmiana formularza: TikTok 32.8% zgód / 24.8 lat, Meta 44.0% / 30.7, Google 64.4% / 37.6. **Nowe kohorty są gorzej osiągalne dla CRM.** |
+| **2026-02-10** | retencja D+30 kohort dziennych **10.7% → 6.9% (−35%)** | |
+| 2026-03-11 | udział mobile 72.8% → 81.8% | |
+
+**Trendy / sezonowość (NIE zdarzenia):** udział rabatu GO (CP 2025-03-27) i rabat średni (2025-08-22) to narastanie bazy aktywnych członków GO (179 → 2,684), bez zmiany stawek. Rejestracje −21% (2025-04-24) i SEO (2025-05-28) to sezon infekcyjny (szczyt I-III, dołek VI-VIII w obu latach). Wczesne CP z 2024-10 to rozruch sprzedaży.
+**Impulsy (1 dzień, bez znaczenia finansowego):** pojedyncze dni opóźnień psychiatry/ginekologa/pediatry (2024-11-07, 2024-12-22, 2026-02-10, 2026-02-26, 2026-03-20), spadek udziału wideo 2025-05-16 (−7 zamówień wideo, możliwa awaria wideo), święta (1.11).
+
+### 3.4 Wycena dźwigni (run-rate 2026-04…09 × 2)
+
+| # | inicjatywa | ΔCM2/rok central | zakres | pewność |
+|---|---|---|---|---|
+| a1 | Wyłączenie `tt_prosp_l4_15min` | 30,340 | 30,340 … 65,453 | wysoka |
+| a1 | Wyłączenie `gs_generic_specjalisci` | 22,378 | 22,378 … 31,807 | wysoka |
+| a2 | Zdjęcie rabatu z `L4SZYBKO20` (kampania zostaje) | 28,843 | −26,635 … 62,129 | średnia (elastyczność nieznana) |
+| a3 | Realokacja budżetu z a1 do `gs_generic_erecepta` | 20,383 | −53,474 … 94,241 | niska (krańcowy CAC) |
+| b1 | Repricing pediatry i psychologa do 119 zł | 33,146 | 30,039 … 36,254 | wysoka |
+| b2 | GO: rabat tylko u internisty | 27,771 | −4,403 … 49,220 | średnia |
+| c1 | In-app: test „otwórz w przeglądarce” / uproszczenie S2 | 10,546 | 0 … 21,092 | niska |
+| c2 | Naprawa płatności w sesjach e-mail/SMS | 9,440 | 4,720 … 18,881 | średnia |
+| d1 | Prekwalifikacja L4 przed płatnością (`L4SZYBKO20`) | 8,860 | 4,430 … 52,950 | średnia |
+| d2 | Usunięcie TEST-QA z produkcji / rozliczeń | 40,900 | 0 … 40,900 | zależy od scenariusza A/B |
+| | **Suma central** | **232,607 zł/rok** | | **+24.9% vs CM2 run-rate 933,142 zł/rok** |
+
+Nakładanie: a2 i d1 (te same zamówienia L4SZYBKO20); a3 wymaga a1. Bez a3 i c1 (niska pewność): ~201.7 tys. zł/rok.
+
+### 3.5 Jawne założenia kroku 3
+
+| # | założenie | uzasadnienie / ryzyko |
+|---|---|---|
+| A17 | Retencja D+k = ≥1 kolejne opłacone zamówienie w (0, k] dni od 1. zamówienia; liczona tylko dla kohort z pełnym oknem. KM: czas do 2. zamówienia, cenzura 2026-09-30. | Standard. Nie łączymy z GO osobno (to nie wizyta). |
+| A18 | Change-points: binary segmentation, test t Welcha na **dziennych** wartościach (dzień = jednostka, odporne na overdispersion), min. segment 7 dni, \|t\| ≥ 7, zmiana ≥ 10%. Impulsy: robust z ≥ 6 vs mediana ±14 dni, ≥ 30% odchylenia, 1-6 dni. | Metoda zamienia płynne trendy na skoki, dlatego każdy CP weryfikowany (sekcja „Weryfikacja” w raporcie). Daty CP ±kilka dni. |
+| A19 | Lejek: S3 „konto” = `account_completed` albo sesja zalogowana od wejścia; sesje GO-only (686) poza ścieżką konsultacji; CR liczony na zamówieniach konsultacji. | README: zalogowany pacjent nie ma `account_completed`. |
+| A20 | Run-rate = 2026-04…2026-09 × 2. | Najnowszy stan miksu po starcie TikToka. Sezon letni → konserwatywnie dla wolumenów. |
+| A21 | Parametry scenariuszy: brak bezkosztowego odzysku pacjentów po wyłączeniu kampanii (high: 30%); elastyczność cenowa specjalistów −15% (0-30%); utrata konwersji po zdjęciu rabatu L4 25% (10-50%); spadek sprzedaży GO 10% (0-25%); krańcowa efektywność realokacji 75% (50-100%); domknięcie luk w lejku 25-50%. | Brak danych o elastyczności. **Do walidacji testami A/B przed decyzją.** |
+| A22 | LMDI do rozbicia zmiany CR na kroki lejka; shift-share do rozbicia miks vs jakość. | Rozkład sumuje się dokładnie. Kolejność segmentów nie wpływa na wynik. |
+
+### 3.6 Wnioski kroku 3
+
+1. **Pacjent żyje ~120 dni.** Retencję trzeba mierzyć jako D+30/D+90 kohort, nie jako „% bazy z zeszłego roku”. Wtedy spadek widać wyraźnie: D+90 z ~24% do ~15% w kohortach 2026.
+2. **Lejek się nie zepsuł**, zmienił się ruch. 100%+ spadku CR to miks Meta/TikTok/in-app. Pieniądze leżą w doborze ruchu i produktu wejściowego (e-recepta ≫ L4), nie w redesignie checkoutu.
+3. **Kampanie L4 uruchomiły kaskadę:** ruch in-app → L4 → zwroty → przeciążenie lekarzy (opóźnienia ×2.7) → kohorty z niską zgodą marketingową (33-44%) → retencja D+30 −35%. To jeden mechanizm, nie kilka problemów.
+4. **Największe pewne dźwignie** (a1 + b1 + d2 + b2 ≈ 155 tys. zł/rok) nie wymagają developmentu. Dźwignie lejkowe (c1/c2) są małe i niepewne.
+5. **Ryzyko operacyjne do eskalacji:** opóźnienie wizyt internisty 11 min średnio / 32 min p90 to wąskie gardło po stronie podaży lekarzy.

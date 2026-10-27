@@ -1,6 +1,6 @@
 # 02 - Unit economics (scripts/02_unit_economics.py)
 
-Wygenerowano: 2026-10-27 14:00
+Wygenerowano: 2026-10-27 14:41
 
 ## 0. Dataset Clean Production
 

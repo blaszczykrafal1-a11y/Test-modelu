@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import (AFFILIATE_FEE, OUT, PAID_MEDIA, Dataset, Report, doctor_cost, month, pct, year_of, zl,
+from common import (AFFILIATE_FEE, OUT, Dataset, Report, compute_cac, doctor_cost, month, pct, year_of, zl,
                     zl2)
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -96,30 +96,9 @@ M["test_accounts"] = {"orders": len(to), "net": round(t_net, 2), "doctor_cost_sc
 # 2. Pule kosztow marketingu i CAC
 # ===========================================================================
 print("2. CAC...")
-spend_pool = defaultdict(float)  # (key, month) -> PLN
-for r in ds.spend:
-    spend_pool[(r["camp"], month(r["date"]))] += r["spend"]
-# afiliacja: 25 zl za 1. oplacone zamowienie pacjenta, ktorego sesja 1. zamowienia jest z afiliacji (A10)
-aff_lt = [p for p in patients.values() if p["lt_channel"] == "affiliate"]
-aff_ft = [p for p in patients.values() if p["ft_channel"] == "affiliate"]
-for p in aff_lt:
-    spend_pool[("affiliate", p["cohort"])] += AFFILIATE_FEE
-
-
-def allocate(key_field):
-    cnt = Counter((p[key_field], p["cohort"]) for p in patients.values())
-    unalloc = 0.0
-    for k, v in spend_pool.items():
-        if cnt.get(k, 0) == 0:
-            unalloc += v
-    for p in patients.values():
-        k = (p[key_field], p["cohort"])
-        p["cac_" + key_field[:2]] = spend_pool.get(k, 0.0) / cnt[k]
-    return unalloc
-
-
-unalloc_ft = allocate("ft_key")
-unalloc_lt = allocate("lt_key")
+cac = compute_cac(ds)
+spend_pool, aff_lt, aff_ft = cac["pool"], cac["aff_lt"], cac["aff_ft"]
+unalloc_ft, unalloc_lt = cac["unalloc_ft"], cac["unalloc_lt"]
 total_mkt = sum(spend_pool.values())
 
 # LTV pacjenta
